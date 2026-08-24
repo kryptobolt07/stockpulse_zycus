@@ -266,6 +266,7 @@
     /* Grids & Cards */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 18px 0; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 18px 0; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 18px 0; }
 
     .card {
       background: var(--bg-card);
@@ -428,6 +429,25 @@
       gap: 6px;
     }
 
+    /* Beginner Explainer Callout */
+    .explainer-card {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 14px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .explainer-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #a5b4fc;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     @media print {
       .sidebar { display: none; }
       .content { padding: 0; max-width: 100%; }
@@ -439,7 +459,7 @@
       .container { flex-direction: column; }
       .sidebar { width: 100%; height: auto; position: static; }
       .content { padding: 24px 18px; }
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -459,15 +479,16 @@
     <nav>
       <ul class="nav-list">
         <li class="nav-item active"><a href="#pitch">1. Commercial Pitch &amp; Track</a></li>
-        <li class="nav-item"><a href="#architecture">2. System Architecture &amp; Pipeline</a></li>
-        <li class="nav-item"><a href="#policy-engine">3. Dual-Strategy Policy Engine</a></li>
-        <li class="nav-item"><a href="#state-machines">4. State Machines &amp; Domain Model</a></li>
-        <li class="nav-item"><a href="#env-matrix">5. Environment Configuration</a></li>
-        <li class="nav-item"><a href="#quickstart">6. Quickstart &amp; Local Setup</a></li>
-        <li class="nav-item"><a href="#api-reference">7. API &amp; SSE Event Reference</a></li>
-        <li class="nav-item"><a href="#judge-fasttrack">8. Judge 3-Minute Walkthrough</a></li>
-        <li class="nav-item"><a href="#benchmarks">9. Technical Innovation &amp; Metrics</a></li>
-        <li class="nav-item"><a href="#compliance">10. Hackathon Honesty Disclosure</a></li>
+        <li class="nav-item"><a href="#backend-architecture">2. Backend Structure &amp; Layers</a></li>
+        <li class="nav-item"><a href="#database-seeding">3. Database Schema &amp; Seed Data</a></li>
+        <li class="nav-item"><a href="#policy-engine">4. Dual-Strategy Policy Engine</a></li>
+        <li class="nav-item"><a href="#state-machines">5. State Machines &amp; Domain Model</a></li>
+        <li class="nav-item"><a href="#env-matrix">6. Environment Configuration</a></li>
+        <li class="nav-item"><a href="#quickstart">7. Quickstart &amp; Local Setup</a></li>
+        <li class="nav-item"><a href="#api-reference">8. API &amp; SSE Event Reference</a></li>
+        <li class="nav-item"><a href="#judge-fasttrack">9. Judge 3-Minute Walkthrough</a></li>
+        <li class="nav-item"><a href="#benchmarks">10. Technical Innovation &amp; Metrics</a></li>
+        <li class="nav-item"><a href="#compliance">11. Hackathon Honesty Disclosure</a></li>
       </ul>
     </nav>
   </aside>
@@ -527,84 +548,221 @@
       </div>
     </section>
 
-    <!-- Section 2: Architecture & Data Flow -->
-    <section id="architecture">
-      <h2>System Architecture &amp; Asynchronous Pipeline</h2>
+    <!-- Section 2: Backend Architecture & Layer Breakdown (Beginner Friendly) -->
+    <section id="backend-architecture">
+      <h2>Backend Structure &amp; Architectural Layers</h2>
       <p>
-        StockPulse is built on an enterprise asynchronous event topology. Order processing returns immediately in sub-10ms, while background workers dispatch signals to LiteLLM Gateway and broadcast live Server-Sent Events (SSE) to the frontend console.
+        StockPulse's backend is built with <strong>Java 21</strong> and <strong>Spring Boot 3.3.4</strong> using Domain-Driven Design (DDD) and the Controller-Service-Repository pattern. It is designed so that even someone new to enterprise architecture can follow the exact flow of data.
       </p>
+
+      <div class="explainer-card">
+        <div class="explainer-title">🎓 Student / Beginner's Guide: How the 5 Backend Layers Work Together</div>
+        <div class="grid-4" style="margin-top: 14px;">
+          <div class="card" style="background: rgba(17, 24, 39, 0.7);">
+            <div style="font-weight: 700; color: #818cf8; font-size: 13px; margin-bottom: 4px;">1. Controllers (`/controller`)</div>
+            <p style="font-size: 12px; margin: 0;">
+              The "front desk" of the server. They receive HTTP requests from the React frontend (e.g. <code>POST /products/1/orders</code>), validate input fields, and pass work to the Service layer.
+            </p>
+          </div>
+          <div class="card" style="background: rgba(17, 24, 39, 0.7);">
+            <div style="font-weight: 700; color: #38bdf8; font-size: 13px; margin-bottom: 4px;">2. Services (`/service`)</div>
+            <p style="font-size: 12px; margin: 0;">
+              The "business brain". Handles database updates, checks inventory thresholds, and fires background events when an order creates a stock alert or surge.
+            </p>
+          </div>
+          <div class="card" style="background: rgba(17, 24, 39, 0.7);">
+            <div style="font-weight: 700; color: #34d399; font-size: 13px; margin-bottom: 4px;">3. Agent Engine (`/agent` &amp; `/ai`)</div>
+            <p style="font-size: 12px; margin: 0;">
+              Asynchronous background workers. Listens to events, crafts prompts with category benchmarks, calls the LiteLLM Gateway (Gemini 2.5 Flash), and clamps bounds.
+            </p>
+          </div>
+          <div class="card" style="background: rgba(17, 24, 39, 0.7);">
+            <div style="font-weight: 700; color: #fbbf24; font-size: 13px; margin-bottom: 4px;">4. Repositories (`/repository`)</div>
+            <p style="font-size: 12px; margin: 0;">
+              Spring Data JPA interfaces that talk directly to the H2 database, providing instant CRUD queries and custom average velocity aggregation.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div class="diagram-card">
         <div class="mermaid">
 graph TD
-    Client["Merchandising Console (React 18)"]
-    API["Spring Boot REST API (Port 8080)"]
-    DB[("H2 In-Memory Database")]
-    EventBus["Spring Async EventBus"]
-    Advisor["AgenticAdvisorService (@Async)"]
-    Router{"Strategy Registry"}
-    RuleEngine["Deterministic Rule Engine"]
-    LLMGateway["Enterprise LiteLLM Gateway"]
-    Gemini["Gemini 2.5 Flash"]
-    SSE["ActivityStreamService (SSE Stream)"]
+    Client["React 18 Merchandising Console"]
+    Controller["ProductController / PricingController"]
+    Service["ProductService (Transactional Domain)"]
+    Repo["ProductRepository (Spring Data JPA)"]
+    H2[("In-Memory H2 Database")]
+    Bus["Spring Async EventBus"]
+    Listener["InventoryEventListener (@Async Worker)"]
+    AdvisorService["AgenticAdvisorService"]
+    LLM["LLMGateway (Gemini 2.5 Flash via LiteLLM)"]
+    SSE["ActivityStreamService (/api/events/stream)"]
 
-    Client -->|Order / Stock Signal| API
-    API -->|Persist State &lt;10ms| DB
-    API -->|Publish ProductStockEvent| EventBus
-    EventBus -->|Async Dispatch| Advisor
-    Advisor -->|Emit LLM_EVALUATION_START| SSE
-    SSE -.->|Live SSE Notification| Client
-    Advisor -->|Query Active Strategy| Router
-    Router -->|Rule Mode| RuleEngine
-    Router -->|AI Mode| LLMGateway
-    LLMGateway -->|OpenAI-Compatible Chat| Gemini
-    Gemini -->|Structured JSON Proposal| LLMGateway
-    LLMGateway -->|Sane Bounds Guardrail| Advisor
-    Advisor -->|Persist Proposal| DB
-    Advisor -->|Emit LLM_EVALUATION_COMPLETE| SSE
+    Client -->|1. Simulates Order or Edits Stock| Controller
+    Controller -->|2. Calls updateStock() / processOrder()| Service
+    Service -->|3. Persists Stock in DB (<8ms)| Repo
+    Repo --> H2
+    Service -->|4. Publishes ProductStockEvent| Bus
+    Service -->>|5. Returns HTTP 200 OK immediately| Client
+    
+    Bus -->|6. Dispatches to background thread| Listener
+    Listener -->|7. Evaluates Trigger Signal| AdvisorService
+    AdvisorService -->|8. Emits LLM_EVALUATION_START| SSE
+    SSE -.->|9. Live SSE HUD alert to Browser| Client
+    AdvisorService -->|10. Calls LiteLLM API with Prompt| LLM
+    LLM -->|11. Validates [0.3x, 3.0x] Guardrails| AdvisorService
+    AdvisorService -->|12. Saves Pending Proposals| Repo
+    AdvisorService -->|13. Emits LLM_EVALUATION_COMPLETE| SSE
+    SSE -.->|14. Auto-sync proposals into Review Queue| Client
         </div>
-        <div class="diagram-caption">Figure 1: High-level System Topology &amp; Asynchronous Non-Blocking Agent Pipeline</div>
-      </div>
-
-      <h3>Sequence Flow: Non-Blocking Order Ingestion &rarr; Background AI Review &rarr; Governance Sign-off</h3>
-      <div class="diagram-card">
-        <div class="mermaid">
-sequenceDiagram
-    autonumber
-    actor Customer as Shopper / Simulator
-    participant API as ProductController
-    participant DB as H2 Database
-    participant Bus as EventBus (Spring)
-    participant Worker as InventoryEventListener
-    participant LLM as Zycus LiteLLM Gateway
-    participant SSE as ActivityStreamService
-    actor Merch as Merchandiser (Console)
-
-    Customer->>API: POST /products/{id}/orders (qty: 5)
-    API->>DB: Decrement stock &amp; bump demand velocity
-    API->>Bus: publishEvent(DemandSpikeEvent)
-    API-->>Customer: 200 OK (Product updated in &lt;8ms)
-    
-    Bus->>Worker: Async onDemandSpike(event)
-    Worker->>SSE: broadcast(LLM_EVALUATION_START)
-    SSE-->>Merch: Live HUD Alert: "AI Evaluating PRD-008..."
-    
-    Worker->>LLM: POST /chat/completions (Tradeoff Prompt + Category Context)
-    LLM-->>Worker: JSON { recommendedPrice: 62.99, confidence: 0.88, reasoning: "..." }
-    Worker->>Worker: Validate Guardrails ([0.3x, 3.0x] &amp; Margin Floor)
-    Worker->>DB: Save PricingSuggestion (status: PENDING)
-    Worker->>SSE: broadcast(LLM_EVALUATION_COMPLETE)
-    SSE-->>Merch: Auto-sync review queue (+1 proposal)
-    
-    Merch->>API: PATCH /pricing-suggestions/{id} (status: ACCEPTED)
-    API->>DB: Update Product.currentPrice = 62.99
-    API-->>Merch: 200 OK (Price applied live)
-        </div>
-        <div class="diagram-caption">Figure 2: Non-Blocking Order Execution &amp; Human-in-the-Loop Sign-off Flow</div>
+        <div class="diagram-caption">Figure 1: Complete 5-Layer Backend Architecture &amp; Asynchronous Agent Pipeline</div>
       </div>
     </section>
 
-    <!-- Section 3: Dual-Strategy Policy Engine -->
+    <!-- Section 3: Database Schema & Seed Data (Addendum A) -->
+    <section id="database-seeding">
+      <h2>Database Usage &amp; Seed Data (Addendum A)</h2>
+      <p>
+        StockPulse utilizes an embedded <strong>H2 In-Memory Relational Database</strong> configured with JPA/Hibernate. This enables instant setup with zero external database dependencies.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div style="font-weight: 700; color: #818cf8; margin-bottom: 6px;">1. `products` Table</div>
+          <p style="font-size: 12.5px;">
+            Stores primary catalog items: <code>id</code>, <code>sku</code>, <code>name</code>, <code>category</code>, <code>current_price</code>, <code>stock_level</code>, <code>reorder_threshold</code>, <code>demand_velocity</code>, <code>status</code>, and Sprint 2 extension fields (<code>cost_price</code>, <code>margin_floor</code>, <code>supplier_id</code>).
+          </p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #38bdf8; margin-bottom: 6px;">2. `pricing_suggestions` Table</div>
+          <p style="font-size: 12.5px;">
+            Stores AI/Rule pricing proposals: <code>product_id</code>, <code>current_price</code>, <code>recommended_price</code>, <code>change_direction</code>, <code>confidence</code>, <code>reasoning</code>, <code>status</code> (<code>PENDING</code>, <code>ACCEPTED</code>, <code>REJECTED</code>), <code>trigger_reason</code>.
+          </p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #34d399; margin-bottom: 6px;">3. `reorder_suggestions` Table</div>
+          <p style="font-size: 12.5px;">
+            Stores replenishment proposals: <code>product_id</code>, <code>current_stock</code>, <code>recommended_quantity</code>, <code>suggested_lead_time_days</code>, <code>confidence</code>, <code>reasoning</code>, <code>status</code>, <code>trigger_reason</code>.
+          </p>
+        </div>
+      </div>
+
+      <h3>Pre-Seeded Catalog Items (Addendum A Standard)</h3>
+      <p style="font-size: 13px;">
+        On application startup, <code>DataInitializer.java</code> automatically seeds the 8 reference products specified in the hackathon brief:
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>SKU</th>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Price ($)</th>
+              <th>Stock</th>
+              <th>Threshold</th>
+              <th>24h Velocity</th>
+              <th>Initial Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>PRD-001</code></td>
+              <td><code>SKU-ELEC-001</code></td>
+              <td>Wireless Earbuds Pro</td>
+              <td><span class="badge badge-primary">ELECTRONICS</span></td>
+              <td>$79.99</td>
+              <td>45</td>
+              <td>20</td>
+              <td>3/d</td>
+              <td><span class="badge badge-emerald">ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td><code>PRD-002</code></td>
+              <td><code>SKU-ELEC-002</code></td>
+              <td>USB-C Hub 7-Port</td>
+              <td><span class="badge badge-primary">ELECTRONICS</span></td>
+              <td>$34.99</td>
+              <td>120</td>
+              <td>30</td>
+              <td>1/d</td>
+              <td><span class="badge badge-emerald">ACTIVE</span></td>
+            </tr>
+            <tr style="background: rgba(245, 158, 11, 0.08);">
+              <td><code>PRD-003</code></td>
+              <td><code>SKU-APP-001</code></td>
+              <td><strong>Organic Cotton T-Shirt</strong></td>
+              <td><span class="badge badge-cyan">APPAREL</span></td>
+              <td>$24.99</td>
+              <td><strong>8 (Low)</strong></td>
+              <td>15</td>
+              <td>12/d</td>
+              <td><span class="badge badge-amber">REVIEW_PENDING</span></td>
+            </tr>
+            <tr>
+              <td><code>PRD-004</code></td>
+              <td><code>SKU-APP-002</code></td>
+              <td>Running Shorts — Navy</td>
+              <td><span class="badge badge-cyan">APPAREL</span></td>
+              <td>$39.99</td>
+              <td>55</td>
+              <td>20</td>
+              <td>2/d</td>
+              <td><span class="badge badge-emerald">ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td><code>PRD-005</code></td>
+              <td><code>SKU-HOME-001</code></td>
+              <td>Ceramic Pour-Over Set</td>
+              <td><span class="badge badge-emerald">HOME</span></td>
+              <td>$49.99</td>
+              <td>22</td>
+              <td>10</td>
+              <td>4/d</td>
+              <td><span class="badge badge-emerald">ACTIVE</span></td>
+            </tr>
+            <tr style="background: rgba(244, 63, 94, 0.08);">
+              <td><code>PRD-006</code></td>
+              <td><code>SKU-HOME-002</code></td>
+              <td>LED Desk Lamp — Dimmable</td>
+              <td><span class="badge badge-emerald">HOME</span></td>
+              <td>$59.99</td>
+              <td><strong>0</strong></td>
+              <td>15</td>
+              <td>0/d</td>
+              <td><span class="badge badge-rose">OUT_OF_STOCK</span></td>
+            </tr>
+            <tr>
+              <td><code>PRD-007</code></td>
+              <td><code>SKU-ELEC-003</code></td>
+              <td>Portable Charger 20K</td>
+              <td><span class="badge badge-primary">ELECTRONICS</span></td>
+              <td>$44.99</td>
+              <td>18</td>
+              <td>25</td>
+              <td>8/d</td>
+              <td><span class="badge badge-emerald">ACTIVE</span></td>
+            </tr>
+            <tr style="background: rgba(6, 182, 212, 0.08);">
+              <td><code>PRD-008</code></td>
+              <td><code>SKU-APP-003</code></td>
+              <td><strong>Hoodie — Heather Grey</strong></td>
+              <td><span class="badge badge-cyan">APPAREL</span></td>
+              <td>$54.99</td>
+              <td>11</td>
+              <td>12</td>
+              <td><strong>15/d (Surge)</strong></td>
+              <td><span class="badge badge-emerald">ACTIVE</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 4: Dual-Strategy Policy Engine -->
     <section id="policy-engine">
       <h2>Dual-Strategy Policy Engine: Mathematical Formulation</h2>
       <p>
@@ -695,7 +853,7 @@ sequenceDiagram
       </div>
     </section>
 
-    <!-- Section 4: State Machines & Domain Model -->
+    <!-- Section 5: State Machines & Domain Model -->
     <section id="state-machines">
       <h2>State Machines &amp; Domain Model Lifecycle</h2>
       <p>
@@ -725,7 +883,7 @@ sequenceDiagram
       </div>
     </section>
 
-    <!-- Section 5: Environment Configuration -->
+    <!-- Section 6: Environment Configuration -->
     <section id="env-matrix">
       <h2>Complete Environment Variables Matrix (`.env`)</h2>
       <div class="table-container">
@@ -801,7 +959,7 @@ sequenceDiagram
       </div>
     </section>
 
-    <!-- Section 6: Quickstart & Local Setup -->
+    <!-- Section 7: Quickstart & Local Setup -->
     <section id="quickstart">
       <h2>One-Line Quickstart &amp; Local Setup</h2>
       <p>StockPulse requires <strong>Java 21 (JDK)</strong> and <strong>Node.js 18+</strong>.</p>
@@ -827,7 +985,7 @@ sequenceDiagram
       </div>
     </section>
 
-    <!-- Section 7: API & SSE Event Reference -->
+    <!-- Section 8: API & SSE Event Reference -->
     <section id="api-reference">
       <h2>API &amp; Real-Time Event Stream Reference</h2>
       <div class="table-container">
@@ -932,7 +1090,7 @@ sequenceDiagram
       </details>
     </section>
 
-    <!-- Section 8: Judge 3-Minute Test Walkthrough -->
+    <!-- Section 9: Judge 3-Minute Test Walkthrough -->
     <section id="judge-fasttrack">
       <h2>Judge / Evaluator Fast-Track (The 3-Minute "Wow" Test)</h2>
       <p>Follow these 4 simple steps in the web console (<a href="http://localhost:5173" style="color: #818cf8;">http://localhost:5173</a>) to verify the full reactive agent loop:</p>
@@ -980,7 +1138,7 @@ sequenceDiagram
       </div>
     </section>
 
-    <!-- Section 9: Technical Innovation & Benchmarks -->
+    <!-- Section 10: Technical Innovation & Benchmarks -->
     <section id="benchmarks">
       <h2>Technical Innovation &amp; Benchmark Metrics</h2>
       <div class="grid-3">
@@ -1002,7 +1160,7 @@ sequenceDiagram
       </div>
     </section>
 
-    <!-- Section 10: Hackathon Compliance -->
+    <!-- Section 11: Hackathon Compliance -->
     <section id="compliance">
       <h2>Hackathon Compliance &amp; Honesty Disclosure</h2>
       <div class="card">

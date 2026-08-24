@@ -13,15 +13,17 @@
 ## 📑 Table of Contents
 1. [Track & Bounty Alignment](#-track--bounty-alignment)
 2. [Key Capabilities](#-key-capabilities)
-3. [System Architecture & Event Loop](#-system-architecture--event-loop)
-4. [Dual-Strategy Policy Engine Formulation](#-dual-strategy-policy-engine-formulation)
-5. [State Machines & Domain Lifecycle](#-state-machines--domain-lifecycle)
-6. [Complete Environment Matrix (`.env`)](#-complete-environment-matrix-env)
-7. [Quickstart & Local Setup](#-quickstart--local-setup)
-8. [API & Event Stream Reference](#-api--event-stream-reference)
-9. [Judge 3-Minute Fast-Track Walkthrough](#-judge-3-minute-fast-track-walkthrough)
-10. [Technical Innovation & Benchmarks](#-technical-innovation--benchmarks)
-11. [Hackathon Compliance & Honesty Disclosure](#-hackathon-compliance--honesty-disclosure)
+3. [Backend Structure & Architecture Guide](#-backend-structure--architecture-guide)
+4. [Database Schema & Seed Data (Addendum A)](#-database-schema--seed-data-addendum-a)
+5. [System Architecture & Event Loop](#-system-architecture--event-loop)
+6. [Dual-Strategy Policy Engine Formulation](#-dual-strategy-policy-engine-formulation)
+7. [State Machines & Domain Lifecycle](#-state-machines--domain-lifecycle)
+8. [Complete Environment Matrix (`.env`)](#-complete-environment-matrix-env)
+9. [Quickstart & Local Setup](#-quickstart--local-setup)
+10. [API & Event Stream Reference](#-api--event-stream-reference)
+11. [Judge 3-Minute Fast-Track Walkthrough](#-judge-3-minute-fast-track-walkthrough)
+12. [Technical Innovation & Benchmarks](#-technical-innovation--benchmarks)
+13. [Hackathon Compliance & Honesty Disclosure](#-hackathon-compliance--honesty-disclosure)
 
 ---
 
@@ -47,6 +49,76 @@
 2. **Context-Aware Tradeoff Reasoning:** Evaluates margin preservation, category velocity, stock runway, and supplier lead times to recommend balanced price shifts ($+\Delta\% / -\Delta\%$) and replenishment batches.
 3. **Human Governance Checkpoint:** Clean, high-contrast review console with an independent 2-column masonry deck, per-card collapsible reasoning, and one-click batch sign-off for high-confidence ($\ge 85\%$) actions.
 4. **Onboarding & Simulation Suite:** Built-in `+ New Product` modal connected to `POST /products`, live stock adjusters, `1x Sale` simulators, and `+5 Surge` viral traffic injectors.
+
+---
+
+## 🏛️ Backend Structure & Architecture Guide
+
+StockPulse is designed following **Domain-Driven Design (DDD)** and the standard enterprise **Controller-Service-Repository** pattern:
+
+```
+backend/src/main/java/com/stockpulse/
+├── StockPulseApplication.java          # Spring Boot main bootstrap entrypoint
+├── controller/                         # REST & SSE HTTP Web Layer
+│   ├── ProductController.java          # GET/POST /products, /orders, /stock, /stream
+│   ├── PricingSuggestionController.java# PATCH /pricing-suggestions/{id} (Approve/Reject)
+│   ├── ReorderSuggestionController.java# PATCH /reorder-suggestions/{id} (Receive stock)
+│   ├── ActivityEventController.java    # GET /api/events/stream (Server-Sent Events)
+│   ├── AnalyticsController.java        # GET /api/analytics/dashboard metrics
+│   ├── StrategyConfigController.java   # POST /api/config/strategy (Runtime hot-swap)
+│   └── SeedController.java             # POST /api/seed/reset (Catalog reset)
+├── service/                            # Core Transactional Domain Logic
+│   ├── ProductService.java             # Stock updates, order processing & event publication
+│   ├── PricingSuggestionService.java   # Human decision lifecycle management
+│   └── ReorderSuggestionService.java   # Inbound receipt stock adjustments
+├── agent/                              # Asynchronous Decoupled Event System
+│   ├── InventoryEventListener.java     # @Async Spring event listener
+│   ├── AgenticAdvisorService.java      # Deduplication gate & pipeline orchestrator
+│   ├── ProductStockEvent.java          # Low stock domain event payload
+│   └── DemandSpikeEvent.java           # Velocity surge domain event payload
+├── ai/                                 # Enterprise AI & LiteLLM Integration
+│   ├── LLMGateway.java                 # Zycus LiteLLM client & sane bounds clamping
+│   ├── PromptBuilder.java              # Structured JSON prompt generator
+│   ├── AiCommerceAdvisor.java          # Combined pricing & reorder AI strategy
+│   ├── AiStreamService.java            # Token-by-token SSE streaming service
+│   └── ActivityStreamService.java      # Real-time SSE pipeline broadcast manager
+├── engine/                             # Pluggable Strategy Pattern Layer
+│   ├── CommerceAdvisor.java            # Common strategy interface
+│   ├── StrategyRegistry.java           # Zero-downtime runtime strategy switcher
+│   ├── rule/                           # Deterministic rule engine baseline
+│   │   ├── RuleBasedCommerceAdvisor.java
+│   │   ├── RuleBasedPricingStrategy.java
+│   │   └── RuleBasedReorderStrategy.java
+│   └── ai/                             # AI-powered implementation delegates
+├── model/                              # JPA Database Entities & Enums
+│   ├── Product.java                    # Catalog SKU entity with status & extension fields
+│   ├── PricingSuggestion.java          # Price proposal entity
+│   ├── ReorderSuggestion.java          # Replenishment batch entity
+│   ├── Category.java                   # ELECTRONICS | APPAREL | HOME
+│   ├── ProductStatus.java              # ACTIVE | PRICE_REVIEW_PENDING | OUT_OF_STOCK
+│   └── SuggestionStatus.java           # PENDING | ACCEPTED | REJECTED
+└── repository/                         # Spring Data JPA Database Interfaces
+    ├── ProductRepository.java          # CRUD + custom velocity aggregation queries
+    ├── PricingSuggestionRepository.java# Idempotency lookups
+    └── ReorderSuggestionRepository.java
+```
+
+---
+
+## 🗄️ Database Schema & Seed Data (Addendum A)
+
+StockPulse uses an embedded **H2 In-Memory Relational Database** initialized on startup via `DataInitializer.java` with the **8 Addendum A reference products**:
+
+| ID | SKU | Product Name | Category | Current Price | Initial Stock | Threshold | 24h Velocity | Initial Status |
+|---|---|---|---|---|---|---|---|---|
+| `PRD-001` | `SKU-ELEC-001` | Wireless Earbuds Pro | `ELECTRONICS` | $79.99 | 45 | 20 | 3/d | `ACTIVE` |
+| `PRD-002` | `SKU-ELEC-002` | USB-C Hub 7-Port | `ELECTRONICS` | $34.99 | 120 | 30 | 1/d | `ACTIVE` |
+| `PRD-003` | `SKU-APP-001` | **Organic Cotton T-Shirt** | `APPAREL` | $24.99 | **8 (Low)** | 15 | 12/d | `REVIEW_PENDING` (Pre-seeded with proposals) |
+| `PRD-004` | `SKU-APP-002` | Running Shorts — Navy | `APPAREL` | $39.99 | 55 | 20 | 2/d | `ACTIVE` |
+| `PRD-005` | `SKU-HOME-001` | Ceramic Pour-Over Set | `HOME` | $49.99 | 22 | 10 | 4/d | `ACTIVE` |
+| `PRD-006` | `SKU-HOME-002` | LED Desk Lamp — Dimmable | `HOME` | $59.99 | **0** | 15 | 0/d | `OUT_OF_STOCK` |
+| `PRD-007` | `SKU-ELEC-003` | Portable Charger 20K | `ELECTRONICS` | $44.99 | 18 | 25 | 8/d | `ACTIVE` |
+| `PRD-008` | `SKU-APP-003` | **Hoodie — Heather Grey** | `APPAREL` | $54.99 | 11 | 12 | **15/d (Surge)** | `ACTIVE` |
 
 ---
 
