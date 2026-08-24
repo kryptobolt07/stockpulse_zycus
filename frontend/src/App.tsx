@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './services/api';
 import {
   Product,
@@ -14,7 +14,8 @@ import { ProductCatalog } from './components/ProductCatalog';
 import { AdjustStockModal } from './components/AdjustStockModal';
 import { AiStreamModal } from './components/AiStreamModal';
 import { AddProductModal } from './components/AddProductModal';
-import { CheckCircle2, AlertCircle, Info, X, Sparkles, RefreshCw, Zap } from 'lucide-react';
+import { ApiExplorer } from './components/ApiExplorer';
+import { CheckCircle2, AlertCircle, Info, X, RefreshCw } from 'lucide-react';
 
 interface EvaluationEvent {
   productId: string;
@@ -24,6 +25,8 @@ interface EvaluationEvent {
 }
 
 export const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'API_EXPLORER'>('DASHBOARD');
+
   const [products, setProducts] = useState<Product[]>([]);
   const [pricingSuggestions, setPricingSuggestions] = useState<PricingSuggestion[]>([]);
   const [reorderSuggestions, setReorderSuggestions] = useState<ReorderSuggestion[]>([]);
@@ -46,7 +49,7 @@ export const App: React.FC = () => {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('stockpulse-theme');
     if (saved) return saved === 'dark';
-    return true; // Default to dark mode
+    return true;
   });
 
   useEffect(() => {
@@ -134,7 +137,6 @@ export const App: React.FC = () => {
             next.delete(data.productId);
             return next;
           });
-          // Instant silent sync when LLM completes
           loadData(true);
         } catch (err) {
           console.error('Error parsing SSE event', err);
@@ -142,7 +144,7 @@ export const App: React.FC = () => {
       });
 
       eventSource.onerror = () => {
-        // SSE will automatically attempt reconnection
+        // SSE will reconnect automatically
       };
     } catch (err) {
       console.warn('SSE stream unavailable, falling back to 2.5s polling', err);
@@ -297,60 +299,70 @@ export const App: React.FC = () => {
         onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
       />
 
-      {/* Main Content Container */}
+      {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6 sm:space-y-8">
-        {/* Live LLM Active Pipeline Activity Banner (Appears when LLM is evaluating) */}
-        {activeEvaluations.size > 0 && (
-          <div className="bg-indigo-600/10 border border-indigo-500/30 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-3 duration-200">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0">
-                <RefreshCw className="w-4 h-4 animate-spin text-white" />
-              </div>
-              <div>
-                <div className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                  <span>AI Agent Evaluating Product Signals in Real Time</span>
-                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+        {activeTab === 'API_EXPLORER' ? (
+          /* Interactive API Explorer View */
+          <ApiExplorer />
+        ) : (
+          /* Main Console Dashboard */
+          <>
+            {/* Live LLM Active Pipeline Activity Banner */}
+            {activeEvaluations.size > 0 && (
+              <div className="bg-indigo-600/10 border border-indigo-500/30 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0">
+                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                      <span>AI Agent Evaluating Product Signals in Real Time</span>
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+                    </div>
+                    <div className="text-xs text-slate-600 dark:text-slate-300 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                      {Array.from(activeEvaluations.values()).map(ev => (
+                        <span key={ev.productId} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-indigo-500/20">
+                          <strong>{ev.productName}</strong> ({ev.productId}) &bull; trigger: <span className="text-indigo-500">{ev.triggerReason}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-300 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
-                  {Array.from(activeEvaluations.values()).map(ev => (
-                    <span key={ev.productId} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-indigo-500/20">
-                      <strong>{ev.productName}</strong> ({ev.productId}) &bull; trigger: <span className="text-indigo-500">{ev.triggerReason}</span>
-                    </span>
-                  ))}
-                </div>
+                <span className="text-[11px] font-mono text-slate-400 hidden md:inline">
+                  Continuous Stream: /api/events/stream
+                </span>
               </div>
-            </div>
-            <span className="text-[11px] font-mono text-slate-400 hidden md:inline">
-              Continuous Stream: /api/events/stream
-            </span>
-          </div>
+            )}
+
+            {/* 6-Card KPI Telemetry Banner */}
+            <MetricsBanner metrics={metrics} />
+
+            {/* Human Governance Checkpoint */}
+            <PendingReviewQueue
+              pricingSuggestions={pricingSuggestions}
+              reorderSuggestions={reorderSuggestions}
+              onDecidePricing={handleDecidePricing}
+              onDecideReorder={handleDecideReorder}
+              isLoading={isLoading}
+            />
+
+            {/* Product Catalog & Simulators */}
+            <ProductCatalog
+              products={products}
+              categoryAverages={metrics?.categoryAverages || {}}
+              onSimulateOrder={handleSimulateOrder}
+              onOpenStockModal={p => setSelectedStockProduct(p)}
+              onRunAiAdvisor={handleRunAiAdvisor}
+              onOpenStreamModal={p => setSelectedStreamProduct(p)}
+              isLoading={isLoading}
+              evaluatingProductIds={evaluatingProductIds}
+            />
+          </>
         )}
-
-        {/* Full 6-Card KPI Telemetry Banner */}
-        <MetricsBanner metrics={metrics} />
-
-        {/* Human Governance Checkpoint */}
-        <PendingReviewQueue
-          pricingSuggestions={pricingSuggestions}
-          reorderSuggestions={reorderSuggestions}
-          onDecidePricing={handleDecidePricing}
-          onDecideReorder={handleDecideReorder}
-          isLoading={isLoading}
-        />
-
-        {/* Product Catalog & Simulators */}
-        <ProductCatalog
-          products={products}
-          categoryAverages={metrics?.categoryAverages || {}}
-          onSimulateOrder={handleSimulateOrder}
-          onOpenStockModal={p => setSelectedStockProduct(p)}
-          onRunAiAdvisor={handleRunAiAdvisor}
-          onOpenStreamModal={p => setSelectedStreamProduct(p)}
-          isLoading={isLoading}
-          evaluatingProductIds={evaluatingProductIds}
-        />
       </main>
 
       {/* Modals */}

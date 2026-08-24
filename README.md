@@ -19,11 +19,10 @@
 6. [Dual-Strategy Policy Engine Formulation](#-dual-strategy-policy-engine-formulation)
 7. [State Machines & Domain Lifecycle](#-state-machines--domain-lifecycle)
 8. [Complete Environment Matrix (`.env`)](#-complete-environment-matrix-env)
-9. [Quickstart & Local Setup](#-quickstart--local-setup)
+9. [Installation & Running Guide](#-installation--running-guide)
 10. [API & Event Stream Reference](#-api--event-stream-reference)
 11. [Judge 3-Minute Fast-Track Walkthrough](#-judge-3-minute-fast-track-walkthrough)
 12. [Technical Innovation & Benchmarks](#-technical-innovation--benchmarks)
-13. [Hackathon Compliance & Honesty Disclosure](#-hackathon-compliance--honesty-disclosure)
 
 ---
 
@@ -211,27 +210,75 @@ LITELLM_HEADER_EXECUTION_MODE=manual
 
 ---
 
-## 🚀 Quickstart & Local Setup
+## 🚀 Installation & Running Guide
 
-### Prerequisites:
-- **Java 21 (JDK)**
-- **Maven 3.8+**
-- **Node.js 18+ & npm**
+### 1. Prerequisites Check
+Ensure your environment meets the minimum version requirements:
+- **Java 21 LTS (JDK)**: `java -version` (e.g. Eclipse Adoptium OpenJDK 21)
+- **Maven 3.8+**: `mvn -version`
+- **Node.js 18+ & npm 9+**: `node -v && npm -v`
+- **Git**: `git --version`
 
-### Terminal 1: Backend Setup
+---
+
+### 2. Clone & Environment Configuration
 ```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd hackathon
+
+# 2. Copy environment template
+cp .env.example .env
+# On Windows PowerShell:
+Copy-Item .env.example .env
+```
+*(The default `.env` is already configured to work out-of-the-box with the Zycus LiteLLM gateway and Gemini 2.5 Flash).*
+
+---
+
+### 3. Backend Setup & Run (Spring Boot 3.3.4)
+The backend uses an embedded in-memory H2 relational database, requiring zero external database installations.
+
+```bash
+# Navigate to backend directory
 cd backend
+
+# Option A: Run Unit & Integration Test Suite (9/9 passing tests)
+mvn clean test
+
+# Option B: Launch the Spring Boot Server (Port 8080)
 mvn spring-boot:run
 ```
-*Backend initializes on `http://localhost:8080` with 8 pre-seeded Addendum A products.*
+*The backend will automatically start on `http://localhost:8080` and seed the 8 reference products from Addendum A.*
 
-### Terminal 2: Frontend Setup
+---
+
+### 4. Frontend Setup & Run (React 18 + Vite + Tailwind CSS)
+
+Open a second terminal window:
+
 ```bash
+# Navigate to frontend directory
 cd frontend
+
+# Install dependencies
 npm install
+
+# Option A: Launch Interactive Dev Server (Port 5173)
 npm run dev
+
+# Option B: Compile Production TypeScript Bundle
+npm run build
 ```
-*Frontend opens at `http://localhost:5173`.*
+*The frontend dashboard will be live at `http://localhost:5173`.*
+
+---
+
+### 5. Accessing the Application
+- **Merchandising Console**: [`http://localhost:5173`](http://localhost:5173)
+- **Interactive API Explorer & Playground**: Click the **`API Explorer`** tab in the top navigation bar at [`http://localhost:5173`](http://localhost:5173)
+- **Backend Health / Dashboard API**: [`http://localhost:8080/api/analytics/dashboard`](http://localhost:8080/api/analytics/dashboard)
+- **Real-Time SSE Event Stream**: [`http://localhost:8080/api/events/stream`](http://localhost:8080/api/events/stream)
 
 ---
 
@@ -274,11 +321,3 @@ Open `http://localhost:5173` in your browser:
 - **LLM Reasoning Duration:** `280 – 420 ms` via Gemini 2.5 Flash on LiteLLM Gateway.
 - **Sane Bounds Adherence:** `100%` within $[0.30\times, 3.00\times]$ guardrails.
 - **Unit & Integration Test Suite:** `9/9 Tests Passed` (`mvn test`).
-
----
-
-## ⚖️ Hackathon Compliance & Honesty Disclosure
-
-- **100% Solo Code:** Authored from scratch during the hackathon sprint following clean architecture and Domain-Driven Design (DDD).
-- **Zero-Friction In-Memory DB:** Built with H2 in-memory storage for instant, zero-configuration evaluation.
-- **Extensible Domain Model:** Already contains nullable schema extension hooks for Sprint 2/3 (`costPrice`, `marginFloor`, `supplierId`).

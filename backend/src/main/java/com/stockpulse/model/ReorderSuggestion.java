@@ -30,7 +30,7 @@ public class ReorderSuggestion {
     @Column(name = "confidence", nullable = false)
     private Double confidence;
 
-    @Column(name = "reasoning", nullable = false, length = 2000)
+    @Column(name = "reasoning", nullable = false, columnDefinition = "TEXT")
     private String reasoning;
 
     @Enumerated(EnumType.STRING)

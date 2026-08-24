@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, RefreshCw, Database, RotateCcw, Sun, Moon, Sparkles, Plus } from 'lucide-react';
+import { Activity, RefreshCw, Database, RotateCcw, Sun, Moon, Sparkles, Plus, Terminal, LayoutDashboard } from 'lucide-react';
 import { StrategyConfig } from '../types';
 
 interface NavbarProps {
@@ -13,6 +13,8 @@ interface NavbarProps {
   onToggleAutoRefresh: () => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
+  activeTab: 'DASHBOARD' | 'API_EXPLORER';
+  onSelectTab: (tab: 'DASHBOARD' | 'API_EXPLORER') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,6 +28,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleAutoRefresh,
   darkMode,
   onToggleDarkMode,
+  activeTab,
+  onSelectTab,
 }) => {
   const isAi = strategyConfig?.activeMode === 'AI_POWERED';
 
@@ -33,26 +37,54 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-30 glass-header border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-slate-950/90 transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
-          {/* Logo & Identity */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
-              <Activity className="w-4 h-4 animate-pulse" />
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-                  StockPulse
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 hidden sm:inline-block" />
+          {/* Logo & Tab Switcher */}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
+                <Activity className="w-4 h-4 animate-pulse" />
               </div>
-              <span className="text-[10.5px] font-mono text-slate-500 dark:text-slate-400 hidden sm:block">
-                Commerce Console
-              </span>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
+                    StockPulse
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 hidden sm:inline-block" />
+                </div>
+                <span className="text-[10.5px] font-mono text-slate-500 dark:text-slate-400 hidden sm:block">
+                  Commerce Console
+                </span>
+              </div>
+            </div>
+
+            {/* Navigation Tabs (Dashboard vs API Explorer) */}
+            <div className="flex items-center h-9 bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono ml-1 sm:ml-3">
+              <button
+                onClick={() => onSelectTab('DASHBOARD')}
+                className={`h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg transition-all ${
+                  activeTab === 'DASHBOARD'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Console</span>
+              </button>
+              <button
+                onClick={() => onSelectTab('API_EXPLORER')}
+                className={`h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg transition-all ${
+                  activeTab === 'API_EXPLORER'
+                    ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Terminal className="w-3.5 h-3.5" />
+                <span>API Explorer</span>
+              </button>
             </div>
           </div>
 
           {/* Strategy Toggle Pill Switch (Equal h-9 height) */}
-          <div className="flex items-center h-9 bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+          <div className="hidden md:flex items-center h-9 bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
             <button
               onClick={onToggleStrategy}
               className={`h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg transition-all ${
@@ -63,8 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="AI Agent Strategy"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">AI Agent</span>
-              <span className="sm:hidden">AI</span>
+              <span>AI Agent</span>
             </button>
             <button
               onClick={onToggleStrategy}
@@ -76,32 +107,33 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="Deterministic Rule Engine"
             >
               <Database className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Rule Engine</span>
-              <span className="sm:hidden">Rules</span>
+              <span>Rule Engine</span>
             </button>
           </div>
 
           {/* Action Buttons (All standardized to h-9 equal height) */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Add Product Button */}
-            <button
-              onClick={onOpenAddProduct}
-              className="h-9 flex items-center gap-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-mono font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30 transition-all shrink-0"
-              title="Add New Catalog SKU"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden md:inline">New Product</span>
-            </button>
+            {activeTab === 'DASHBOARD' && (
+              <button
+                onClick={onOpenAddProduct}
+                className="h-9 flex items-center gap-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-mono font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30 transition-all shrink-0"
+                title="Add New Catalog SKU"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden lg:inline">New Product</span>
+              </button>
+            )}
 
             {/* Live Auto-Poll Indicator */}
             <button
               onClick={onToggleAutoRefresh}
-              className={`h-9 hidden md:flex items-center gap-2 px-3 rounded-xl text-xs font-mono border transition-all ${
+              className={`h-9 hidden lg:flex items-center gap-2 px-3 rounded-xl text-xs font-mono border transition-all ${
                 autoRefresh
                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                   : 'bg-slate-100 dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800'
               }`}
-              title="Toggle 4s live auto-refresh"
+              title="Toggle 2.5s live auto-refresh"
             >
               <span className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
               <span>{autoRefresh ? 'Live' : 'Paused'}</span>

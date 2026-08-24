@@ -488,7 +488,6 @@
         <li class="nav-item"><a href="#api-reference">8. API &amp; SSE Event Reference</a></li>
         <li class="nav-item"><a href="#judge-fasttrack">9. Judge 3-Minute Walkthrough</a></li>
         <li class="nav-item"><a href="#benchmarks">10. Technical Innovation &amp; Metrics</a></li>
-        <li class="nav-item"><a href="#compliance">11. Hackathon Honesty Disclosure</a></li>
       </ul>
     </nav>
   </aside>
@@ -500,7 +499,7 @@
     <section id="pitch">
       <div class="hero">
         <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-          <span class="badge badge-primary">Solo Hackathon Build</span>
+          <span class="badge badge-primary">Enterprise Autonomous Commerce</span>
           <span class="badge badge-emerald">Spring Boot 3.3.4 &bull; Java 21</span>
           <span class="badge badge-cyan">React 18 &bull; Real-Time SSE</span>
           <span class="badge badge-amber">Gemini 2.5 Flash LiteLLM</span>
@@ -508,7 +507,7 @@
 
         <h1>StockPulse: Autonomous AI Inventory &amp; Dynamic Pricing Console</h1>
         <p class="hero-pitch">
-          The event-driven autonomous commerce decision engine that eliminates the <strong>\$1.1 Trillion global inventory distortion problem</strong>. When stock levels breach reorder safety thresholds or demand velocity surges, StockPulse intercepts the telemetry in &lt;10ms, runs contextual AI tradeoff reasoning in the background, and delivers explainable pricing and replenishment proposals for human merchandisers to review and sign off with one click.
+          The event-driven autonomous commerce decision engine that eliminates the <strong>$1.1 Trillion global inventory distortion problem</strong>. When stock levels breach reorder safety thresholds or demand velocity surges, StockPulse intercepts the telemetry in &lt;10ms, runs contextual AI tradeoff reasoning in the background, and delivers explainable pricing and replenishment proposals for human merchandisers to review and sign off with one click.
         </p>
 
         <div class="hero-meta-grid">
@@ -587,34 +586,34 @@
 
       <div class="diagram-card">
         <div class="mermaid">
-graph TD
+flowchart TD
     Client["React 18 Merchandising Console"]
-    Controller["ProductController / PricingController"]
+    Controller["ProductController &amp; PricingController"]
     Service["ProductService (Transactional Domain)"]
     Repo["ProductRepository (Spring Data JPA)"]
     H2[("In-Memory H2 Database")]
     Bus["Spring Async EventBus"]
-    Listener["InventoryEventListener (@Async Worker)"]
+    Listener["InventoryEventListener (Async Worker)"]
     AdvisorService["AgenticAdvisorService"]
-    LLM["LLMGateway (Gemini 2.5 Flash via LiteLLM)"]
-    SSE["ActivityStreamService (/api/events/stream)"]
+    LLM["LLMGateway (Gemini 2.5 Flash)"]
+    SSE["ActivityStreamService (SSE Stream)"]
 
-    Client -->|1. Simulates Order or Edits Stock| Controller
-    Controller -->|2. Calls updateStock() / processOrder()| Service
-    Service -->|3. Persists Stock in DB (<8ms)| Repo
+    Client -->|1. Simulates Order or Stock Update| Controller
+    Controller -->|2. Calls Service Layer| Service
+    Service -->|3. Persists Stock in DB| Repo
     Repo --> H2
-    Service -->|4. Publishes ProductStockEvent| Bus
-    Service -->>|5. Returns HTTP 200 OK immediately| Client
+    Service -->|4. Publishes Domain Event| Bus
+    Service -->|5. Returns HTTP 200 OK| Client
     
-    Bus -->|6. Dispatches to background thread| Listener
+    Bus -->|6. Dispatches to Worker| Listener
     Listener -->|7. Evaluates Trigger Signal| AdvisorService
-    AdvisorService -->|8. Emits LLM_EVALUATION_START| SSE
-    SSE -.->|9. Live SSE HUD alert to Browser| Client
-    AdvisorService -->|10. Calls LiteLLM API with Prompt| LLM
-    LLM -->|11. Validates [0.3x, 3.0x] Guardrails| AdvisorService
+    AdvisorService -->|8. Emits Evaluation Start| SSE
+    SSE -.->|9. Live SSE HUD Alert| Client
+    AdvisorService -->|10. Calls LiteLLM Gateway| LLM
+    LLM -->|11. Validates Sane Bounds| AdvisorService
     AdvisorService -->|12. Saves Pending Proposals| Repo
-    AdvisorService -->|13. Emits LLM_EVALUATION_COMPLETE| SSE
-    SSE -.->|14. Auto-sync proposals into Review Queue| Client
+    AdvisorService -->|13. Emits Evaluation Complete| SSE
+    SSE -.->|14. Auto-syncs Review Queue| Client
         </div>
         <div class="diagram-caption">Figure 1: Complete 5-Layer Backend Architecture &amp; Asynchronous Agent Pipeline</div>
       </div>
@@ -1157,23 +1156,6 @@ graph TD
           <div style="font-size: 28px; font-weight: 800; color: #38bdf8; font-family: var(--mono); margin: 6px 0;">0 % Out of Bounds</div>
           <p style="font-size: 12px; margin: 0;">Deterministic $[0.3\times, 3.0\times]$ clamping layer with margin safety.</p>
         </div>
-      </div>
-    </section>
-
-    <!-- Section 11: Hackathon Compliance -->
-    <section id="compliance">
-      <h2>Hackathon Compliance &amp; Honesty Disclosure</h2>
-      <div class="card">
-        <div style="font-weight: 700; color: white; margin-bottom: 8px;">100% Solo Build During Hackathon Sprint</div>
-        <p>
-          Every line of domain modeling, asynchronous event handling, LiteLLM gateway integration, guardrail policies, and responsive React frontend was authored from scratch during the hackathon sprint following clean architecture and DDD principles.
-        </p>
-        <h3 style="margin-top: 14px;">Intentional Engineering Trade-offs Under Time Limit:</h3>
-        <ul style="padding-left: 18px; font-size: 13px; color: #cbd5e1; line-height: 1.8;">
-          <li><strong>In-Memory H2 DB:</strong> Selected over external PostgreSQL to provide zero-friction, one-command evaluation for judges with automated Addendum A seed data.</li>
-          <li><strong>Pluggable Strategy Registry:</strong> Built with interface abstraction (<code>CommerceAdvisor</code>) to allow dynamic switching between AI and deterministic algorithms without restart.</li>
-          <li><strong>Sprint 2/3 Extension Points:</strong> The schema already provisions nullable fields for <code>costPrice</code>, <code>marginFloor</code>, and <code>supplierId</code> ready for multi-echelon supply chain expansions.</li>
-        </ul>
       </div>
     </section>
 
