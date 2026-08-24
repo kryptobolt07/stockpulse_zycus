@@ -11,34 +11,17 @@
 ---
 
 ## 📑 Table of Contents
-1. [Track & Bounty Alignment](#-track--bounty-alignment)
-2. [Key Capabilities](#-key-capabilities)
-3. [Backend Structure & Architecture Guide](#-backend-structure--architecture-guide)
-4. [Database Schema & Seed Data (Addendum A)](#-database-schema--seed-data-addendum-a)
-5. [System Architecture & Event Loop](#-system-architecture--event-loop)
-6. [Dual-Strategy Policy Engine Formulation](#-dual-strategy-policy-engine-formulation)
-7. [State Machines & Domain Lifecycle](#-state-machines--domain-lifecycle)
-8. [Complete Environment Matrix (`.env`)](#-complete-environment-matrix-env)
-9. [Installation & Running Guide](#-installation--running-guide)
-10. [API & Event Stream Reference](#-api--event-stream-reference)
-11. [Judge 3-Minute Fast-Track Walkthrough](#-judge-3-minute-fast-track-walkthrough)
-12. [Technical Innovation & Benchmarks](#-technical-innovation--benchmarks)
-
----
-
-## 🎯 Track & Bounty Alignment
-
-| Metric | Target |
-|---|---|
-| **Primary Track** | Autonomous AI Agents in Commerce & Enterprise Operations |
-| **Sponsor Bounty** | **Best Enterprise Agentic Workflow** & **Real-Time AI Stream** |
-| **Evaluation URL** | `http://localhost:5173` (Frontend) & `http://localhost:8080` (Backend REST + SSE) |
-
-### Why StockPulse Qualifies for Best Agentic Workflow:
-- **True Autonomous Event Loop:** Unlike prompt-wrapper apps, StockPulse decouples customer transaction throughput from AI inference using an asynchronous Spring Application Event Bus. Orders are acknowledged in `<10ms`, while background workers trigger Gemini 2.5 Flash evaluations when thresholds are breached.
-- **Mathematical Sane Bounds Guardrails:** AI recommendations are verified against a deterministic clamping layer (`[0.30x, 3.00x]` price bound, positive margin floor, lead time sanity).
-- **Runtime Strategy Hot-Swapping:** Allows instant toggling between `AI_POWERED` (Gemini 2.5) and `RULE_BASED` strategies without restarting the server.
-- **Real-Time Server-Sent Events (SSE):** Features continuous auto-sync (2.5s) and live token streaming via `/api/events/stream` and `/products/{id}/suggest-pricing/stream`.
+1. [Key Capabilities](#-key-capabilities)
+2. [Backend Structure & Architecture Guide](#-backend-structure--architecture-guide)
+3. [Database Schema & Seed Data (Addendum A)](#-database-schema--seed-data-addendum-a)
+4. [System Architecture & Event Loop](#-system-architecture--event-loop)
+5. [Dual-Strategy Policy Engine Formulation](#-dual-strategy-policy-engine-formulation)
+6. [State Machines & Domain Lifecycle](#-state-machines--domain-lifecycle)
+7. [Complete Environment Matrix (`.env`)](#-complete-environment-matrix-env)
+8. [Installation & Running Guide](#-installation--running-guide)
+9. [API & Event Stream Reference](#-api--event-stream-reference)
+10. [Judge 3-Minute Fast-Track Walkthrough](#-judge-3-minute-fast-track-walkthrough)
+11. [Technical Innovation & Benchmarks](#-technical-innovation--benchmarks)
 
 ---
 
@@ -212,7 +195,23 @@ LITELLM_HEADER_EXECUTION_MODE=manual
 
 ## 🚀 Installation & Running Guide
 
-### 1. Prerequisites Check
+### ⚡ Option A: Automated 1-Click Dependency Installer (Windows Winget)
+If your machine is missing Java 21, Maven, Node.js, or Git, run our automated provisioner script to install everything via Windows Package Manager (`winget`):
+
+```powershell
+# Run automated installer & bootstrapper (PowerShell)
+.\setup-dependencies.ps1
+
+# Or double-click the batch wrapper:
+.\setup-dependencies.bat
+```
+*This installs Java 21 LTS (Temurin), Apache Maven, Node.js LTS, and Git, configures environment variables, initializes `.env`, and installs frontend NPM dependencies automatically.*
+
+---
+
+### 🛠️ Option B: Manual Setup
+
+#### 1. Prerequisites Check
 Ensure your environment meets the minimum version requirements:
 - **Java 21 LTS (JDK)**: `java -version` (e.g. Eclipse Adoptium OpenJDK 21)
 - **Maven 3.8+**: `mvn -version`
@@ -221,7 +220,7 @@ Ensure your environment meets the minimum version requirements:
 
 ---
 
-### 2. Clone & Environment Configuration
+#### 2. Clone & Environment Configuration
 ```bash
 # 1. Clone the repository
 git clone <repo-url>

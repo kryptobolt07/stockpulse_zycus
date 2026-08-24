@@ -961,10 +961,21 @@ flowchart TD
     <!-- Section 7: Quickstart & Local Setup -->
     <section id="quickstart">
       <h2>One-Line Quickstart &amp; Local Setup</h2>
-      <p>StockPulse requires <strong>Java 21 (JDK)</strong> and <strong>Node.js 18+</strong>.</p>
+      <p>StockPulse requires <strong>Java 21 (JDK)</strong>, <strong>Maven 3.8+</strong>, and <strong>Node.js 18+</strong>.</p>
+
+      <div class="card" style="margin-bottom: 20px; border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(14, 165, 233, 0.05) 100%);">
+        <div style="font-weight: 700; color: #818cf8; margin-bottom: 8px;">⚡ Option A: Automated 1-Click Winget Installer (Windows)</div>
+        <p style="font-size: 13px;">If your test PC is missing Java 21, Maven, Node.js, or Git, run our automated provisioner script to install all dependencies via Windows Package Manager (`winget`):</p>
+        <div style="font-family: var(--mono); font-size: 12px; background: #050811; padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); color: #22d3ee;">
+          # PowerShell 1-click bootstrap script<br>
+          .\setup-dependencies.ps1<br><br>
+          # Or double-click the Windows batch wrapper<br>
+          .\setup-dependencies.bat
+        </div>
+      </div>
 
       <div class="card" style="margin-bottom: 20px;">
-        <div style="font-weight: 700; color: white; margin-bottom: 8px;">⚡ Option A: Rapid Terminal Launch</div>
+        <div style="font-weight: 700; color: white; margin-bottom: 8px;">🚀 Option B: Rapid Terminal Launch</div>
         <div style="font-family: var(--mono); font-size: 12px; background: #050811; padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); color: #38bdf8;">
           # 1. Start Spring Boot Backend (Port 8080)<br>
           cd backend &amp;&amp; mvn spring-boot:run<br><br>
@@ -974,7 +985,7 @@ flowchart TD
       </div>
 
       <div class="card">
-        <div style="font-weight: 700; color: white; margin-bottom: 8px;">📦 Option B: Run Tests &amp; Production Build</div>
+        <div style="font-weight: 700; color: white; margin-bottom: 8px;">📦 Option C: Run Tests &amp; Production Build</div>
         <div style="font-family: var(--mono); font-size: 12px; background: #050811; padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); color: #34d399;">
           # Run Backend Test Suite (9/9 Unit &amp; Integration Tests)<br>
           cd backend &amp;&amp; mvn test<br><br>
