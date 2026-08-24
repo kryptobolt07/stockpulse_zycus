@@ -43,12 +43,13 @@ public class AiStreamService {
                 PricingRecommendation rec = strategyRegistry.getActiveAdvisor().evaluatePricing(product, trigger, context);
 
                 // Stream tokens of reasoning
-                String[] words = rec.getReasoning().split(" ");
-                StringBuilder accumulated = new StringBuilder();
+                String reasoningText = rec.getReasoning() != null ? rec.getReasoning() : "";
+                String[] words = reasoningText.split("\\s+");
                 for (String word : words) {
-                    accumulated.append(word).append(" ");
-                    emitter.send(SseEmitter.event().name("token").data(word + " "));
-                    Thread.sleep(40);
+                    if (word != null && !word.isEmpty()) {
+                        emitter.send(SseEmitter.event().name("token").data(word.trim()));
+                        Thread.sleep(30);
+                    }
                 }
 
                 // Send final structured recommendation

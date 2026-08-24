@@ -176,17 +176,36 @@ public class AiCommerceAdvisor implements CommerceAdvisor {
     }
 
     private String extractJson(String raw) {
-        if (raw == null) return "{}";
-        String trimmed = raw.trim();
-        if (trimmed.startsWith("```json")) {
-            trimmed = trimmed.substring(7);
-        } else if (trimmed.startsWith("```")) {
-            trimmed = trimmed.substring(3);
+        if (raw == null || raw.trim().isEmpty()) return "{}";
+        String str = raw.trim();
+
+        // 1. Check for markdown code blocks
+        if (str.contains("```json")) {
+            int start = str.indexOf("```json") + 7;
+            int end = str.indexOf("```", start);
+            if (end > start) {
+                str = str.substring(start, end).trim();
+            } else {
+                str = str.substring(start).trim();
+            }
+        } else if (str.contains("```")) {
+            int start = str.indexOf("```") + 3;
+            int end = str.indexOf("```", start);
+            if (end > start) {
+                str = str.substring(start, end).trim();
+            } else {
+                str = str.substring(start).trim();
+            }
         }
-        if (trimmed.endsWith("```")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 3);
+
+        // 2. Find first '{' and last '}'
+        int firstBrace = str.indexOf('{');
+        int lastBrace = str.lastIndexOf('}');
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+            return str.substring(firstBrace, lastBrace + 1).trim();
         }
-        return trimmed.trim();
+
+        return str;
     }
 
     private double round(double val) {

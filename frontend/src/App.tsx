@@ -44,6 +44,7 @@ export const App: React.FC = () => {
 
   // Active Real-Time LLM Evaluations Tracking (from SSE EventStream)
   const [activeEvaluations, setActiveEvaluations] = useState<Map<string, EvaluationEvent>>(new Map());
+  const [advisingProductIds, setAdvisingProductIds] = useState<Set<string>>(new Set());
 
   // Dark Mode State
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -244,18 +245,24 @@ export const App: React.FC = () => {
   };
 
   const handleRunAiAdvisor = async (id: string) => {
-    setIsLoading(true);
+    setAdvisingProductIds(prev => new Set(prev).add(id));
+    const targetProduct = products.find(p => p.id === id);
+    const prodName = targetProduct ? targetProduct.name : id;
     try {
       await Promise.all([
         api.suggestPricing(id),
         api.suggestReorder(id)
       ]);
-      showToast('Generated on-demand AI Pricing & Replenishment proposals.', 'success');
+      showToast(`AI proposals generated for ${prodName}! Added to Pending Approvals queue.`, 'success');
       await loadData(true);
     } catch (err: any) {
-      showToast('Failed to generate suggestions', 'error');
+      showToast(err.message || 'Failed to generate suggestions', 'error');
     } finally {
-      setIsLoading(false);
+      setAdvisingProductIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -360,6 +367,7 @@ export const App: React.FC = () => {
               onOpenStreamModal={p => setSelectedStreamProduct(p)}
               isLoading={isLoading}
               evaluatingProductIds={evaluatingProductIds}
+              advisingProductIds={advisingProductIds}
             />
           </>
         )}

@@ -30,7 +30,9 @@
 1. **Autonomous Signal Detection:** Proactively triggers on `INVENTORY_LOW` ($S \le T_{\text{reorder}}$) and `DEMAND_SPIKE` ($V > 2.0 \times \bar{V}_{\text{category}}$).
 2. **Context-Aware Tradeoff Reasoning:** Evaluates margin preservation, category velocity, stock runway, and supplier lead times to recommend balanced price shifts ($+\Delta\% / -\Delta\%$) and replenishment batches.
 3. **Human Governance Checkpoint:** Clean, high-contrast review console with an independent 2-column masonry deck, per-card collapsible reasoning, and one-click batch sign-off for high-confidence ($\ge 85\%$) actions.
-4. **Onboarding & Simulation Suite:** Built-in `+ New Product` modal connected to `POST /products`, live stock adjusters, `1x Sale` simulators, and `+5 Surge` viral traffic injectors.
+4. **Onboarding & Simulation Suite:** Built-in `+ New Product` modal connected to `POST /products`, live stock adjusters, `1x Sale` simulators, `+5 Surge` viral traffic injectors, and on-demand `AI Advise` with active state feedback.
+5. **Real-Time Token Stream Inspector:** Live SSE stream viewer (`/products/{id}/suggest-pricing/stream`) displaying live SKU context chips, token-by-token reasoning visualization with `AbortController` stream deduplication, and validated proposal executive summaries.
+6. **Interactive Developer API Explorer:** Built-in API testing tab to send and inspect requests across all catalog, pricing, governance, and SSE telemetry endpoints in real time.
 
 ---
 
