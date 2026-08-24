@@ -740,33 +740,33 @@
       <div class="diagram-card" style="margin-top: 16px;">
         <div class="mermaid">
 flowchart TD
-    Client["React 18 Merchandising Console &amp; Simulation Lab"]
+    Client["React 18 Console and Simulation Lab"]
     Controller["REST Controllers (7 Endpoints)"]
     Service["Transactional Domain Services"]
     Repo["Spring Data JPA Repositories"]
     H2[("In-Memory H2 Database")]
     Bus["Spring Async EventBus"]
-    Listener["InventoryEventListener (@Async Worker)"]
+    Listener["InventoryEventListener (Async Worker)"]
     AdvisorService["AgenticAdvisorService (Deduplication Gate)"]
     LLM["LLMGateway (Gemini 2.5 Flash)"]
     SSE["ActivityStreamService (SSE Event Stream)"]
 
-    Client -->|1. Order Ingestion or Trigger| Controller
-    Controller -->|2. Transactional Mutation| Service
-    Service -->|3. Persists in DB| Repo
+    Client -->|"1. Order Ingestion or Trigger"| Controller
+    Controller -->|"2. Transactional Mutation"| Service
+    Service -->|"3. Persists in DB"| Repo
     Repo --> H2
-    Service -->|4. Publishes Domain Event| Bus
-    Service -->|5. Instant HTTP 200 OK (<10ms)| Client
+    Service -->|"4. Publishes Domain Event"| Bus
+    Service -->|"5. Instant HTTP 200 OK (sub-10ms)"| Client
     
-    Bus -->|6. Dispatches to Async Pool| Listener
-    Listener -->|7. Evaluates Signal & Velocity| AdvisorService
-    AdvisorService -->|8. Emits LLM_EVALUATION_START| SSE
-    SSE -.->|9. Live SSE Stream Alert| Client
-    AdvisorService -->|10. Queries LiteLLM Gateway| LLM
-    LLM -->|11. Validates Sane Bounds Guardrails| AdvisorService
-    AdvisorService -->|12. Persists Pending Proposals| Repo
-    AdvisorService -->|13. Emits LLM_EVALUATION_COMPLETE| SSE
-    SSE -.->|14. Auto-Refreshes Governance Queue| Client
+    Bus -->|"6. Dispatches to Async Pool"| Listener
+    Listener -->|"7. Evaluates Signal and Velocity"| AdvisorService
+    AdvisorService -->|"8. Emits LLM_EVALUATION_START"| SSE
+    SSE -.->|"9. Live SSE Stream Alert"| Client
+    AdvisorService -->|"10. Queries LiteLLM Gateway"| LLM
+    LLM -->|"11. Validates Sane Bounds Guardrails"| AdvisorService
+    AdvisorService -->|"12. Persists Pending Proposals"| Repo
+    AdvisorService -->|"13. Emits LLM_EVALUATION_COMPLETE"| SSE
+    SSE -.->|"14. Auto-Refreshes Governance Queue"| Client
         </div>
         <div class="diagram-caption">Figure 1: Complete 5-Layer Enterprise Backend Architecture &amp; Asynchronous Agent Pipeline</div>
       </div>
@@ -1183,18 +1183,27 @@ flowchart TD
       <p>StockPulse requires <strong>Java 21 (JDK)</strong>, <strong>Maven 3.8+</strong>, and <strong>Node.js 18+</strong>.</p>
 
       <div class="card" style="margin-bottom: 20px; border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(14, 165, 233, 0.05) 100%);">
-        <div style="font-weight: 700; color: #818cf8; margin-bottom: 8px;">⚡ Option A: Automated 1-Click Winget Installer (Windows)</div>
-        <p style="font-size: 13px;">If your test PC is missing Java 21, Maven, Node.js, or Git, run our automated provisioner script to install all dependencies via Windows Package Manager (`winget`):</p>
+        <div style="font-weight: 700; color: #818cf8; margin-bottom: 8px;">⚡ Option A: Automated 1-Click Winget Installer &amp; Interactive API Key Config</div>
+        <p style="font-size: 13px;">If your test PC is missing Java 21, Maven, Node.js, or Git, run our automated provisioner script. It automatically installs all tools, interactively prompts for your <strong>Zycus LiteLLM / Gemini API Key</strong> to configure <code>.env</code> (or press Enter for default demo simulation mode), and prepares NPM dependencies:</p>
         <div style="font-family: var(--mono); font-size: 12px; background: #050811; padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); color: #22d3ee;">
-          # PowerShell 1-click bootstrap script<br>
+          # PowerShell 1-click bootstrap &amp; API key config script<br>
           .\setup-dependencies.ps1<br><br>
           # Or double-click the Windows batch wrapper<br>
           .\setup-dependencies.bat
         </div>
       </div>
 
+      <div class="card" style="margin-bottom: 20px; border-color: rgba(52, 211, 153, 0.4); background: linear-gradient(135deg, rgba(52, 211, 153, 0.08) 0%, rgba(14, 165, 233, 0.05) 100%);">
+        <div style="font-weight: 700; color: #34d399; margin-bottom: 8px;">🚀 Option B: 1-Click Fullstack Launcher (Starts Backend + Frontend Together)</div>
+        <p style="font-size: 13px;">Launches both Spring Boot (Port 8080) and React Frontend (Port 5173), displays live endpoint URLs, and opens your default browser:</p>
+        <div style="font-family: var(--mono); font-size: 12px; background: #050811; padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); color: #34d399;">
+          # Double-click or run from PowerShell<br>
+          .\start-stockpulse.bat &nbsp; # Or .\start-stockpulse.ps1
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom: 20px;">
-        <div style="font-weight: 700; color: white; margin-bottom: 8px;">🚀 Option B: Rapid Terminal Launch</div>
+        <div style="font-weight: 700; color: white; margin-bottom: 8px;">💻 Option C: Manual Terminal Launch</div>
         <div style="font-family: var(--mono); font-size: 12px; background: #050811; padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); color: #38bdf8;">
           # 1. Start Spring Boot Backend (Port 8080)<br>
           cd backend &amp;&amp; mvn spring-boot:run<br><br>

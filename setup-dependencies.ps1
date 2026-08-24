@@ -1,5 +1,7 @@
-param(
-    [switch]$SkipProjectSetup
+﻿param(
+    [switch]$SkipProjectSetup,
+    [switch]$NonInteractive,
+    [string]$ApiKey
 )
 
 function Write-Banner {
@@ -141,8 +143,61 @@ if (-not $SkipProjectSetup) {
         Write-Info "Creating .env from .env.example..."
         Copy-Item $envExamplePath $envPath
         Write-Success ".env configuration initialized."
-    } else {
-        Write-Success ".env file is present."
+    }
+
+    if (Test-Path $envPath) {
+        $envContent = Get-Content $envPath -Raw
+        $currentApiKey = ""
+        if ($envContent -match 'LLM_API_KEY=([^\r\n]+)') {
+            $currentApiKey = $matches[1].Trim()
+        } elseif ($envContent -match 'LITELLM_API_KEY=([^\r\n]+)') {
+            $currentApiKey = $matches[1].Trim()
+        }
+
+        # Prompt or configure API key
+        if ($ApiKey -and $ApiKey.Trim() -ne "") {
+            $trimmedKey = $ApiKey.Trim()
+            if ($envContent -match 'LLM_API_KEY=.*') {
+                $envContent = $envContent -replace 'LLM_API_KEY=.*', "LLM_API_KEY=$trimmedKey"
+            } else {
+                $envContent += "`nLLM_API_KEY=$trimmedKey"
+            }
+            if ($envContent -match 'LITELLM_API_KEY=.*') {
+                $envContent = $envContent -replace 'LITELLM_API_KEY=.*', "LITELLM_API_KEY=$trimmedKey"
+            }
+            Set-Content -Path $envPath -Value $envContent -Encoding UTF8
+            Write-Success "API Key configured from argument and saved to .env."
+        } elseif (-not $NonInteractive) {
+            Write-Host ""
+            Write-Host "------------------------------------------------------------------------" -ForegroundColor Cyan
+            Write-Host "   KEY CONFIGURATION : ZYCUS LITELLM / GEMINI AI GATEWAY" -ForegroundColor Yellow
+            Write-Host "------------------------------------------------------------------------" -ForegroundColor Cyan
+            if ($currentApiKey -and $currentApiKey -ne "your_litellm_api_key_here") {
+                $masked = $currentApiKey.Substring(0, [Math]::Min(8, $currentApiKey.Length)) + "..."
+                Write-Host "   Existing API Key detected: $masked" -ForegroundColor Gray
+                Write-Host "   Press [ENTER] to keep existing key, or type a new API key below:" -ForegroundColor White
+            } else {
+                Write-Host "   Enter your Zycus LiteLLM / Gemini API Key" -ForegroundColor White
+                Write-Host "   (or press [ENTER] to use default demo simulation engine):" -ForegroundColor Gray
+            }
+            $inputKey = Read-Host "   > API Key"
+            if ($inputKey -and $inputKey.Trim() -ne "") {
+                $trimmedKey = $inputKey.Trim()
+                if ($envContent -match 'LLM_API_KEY=.*') {
+                    $envContent = $envContent -replace 'LLM_API_KEY=.*', "LLM_API_KEY=$trimmedKey"
+                } else {
+                    $envContent += "`nLLM_API_KEY=$trimmedKey"
+                }
+                if ($envContent -match 'LITELLM_API_KEY=.*') {
+                    $envContent = $envContent -replace 'LITELLM_API_KEY=.*', "LITELLM_API_KEY=$trimmedKey"
+                }
+                Set-Content -Path $envPath -Value $envContent -Encoding UTF8
+                Write-Success "API Key successfully updated and saved to .env."
+            } else {
+                Write-Info "Keeping existing API configuration in .env."
+            }
+            Write-Host "------------------------------------------------------------------------" -ForegroundColor Cyan
+        }
     }
 
     # Frontend npm install
@@ -178,12 +233,25 @@ if (-not $SkipProjectSetup) {
 
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Green
-Write-Host "   ENVIRONMENT PROVISIONING AND SETUP COMPLETE!" -ForegroundColor Green
-Write-Host "========================================================================" -ForegroundColor Green
-Write-Host "   To start the application:" -ForegroundColor White
-Write-Host "   1. Backend:  cd backend; mvn spring-boot:run" -ForegroundColor Yellow
-Write-Host "   2. Frontend: cd frontend; npm run dev" -ForegroundColor Yellow
-Write-Host "   3. Open:     http://localhost:5173" -ForegroundColor Cyan
+Write-Host "   ENVIRONMENT PROVISIONING AND SETUP COMPLETED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "========================================================================" -ForegroundColor Green
 Write-Host ""
-
+Write-Host "   APPLICATION ENDPOINTS AND ACCESS LINKS:" -ForegroundColor White
+Write-Host "   --------------------------------------------------------------------" -ForegroundColor Gray
+Write-Host "   React 18 Console UI:        http://localhost:5173" -ForegroundColor Cyan
+Write-Host "   Autonomous Simulation Lab:  http://localhost:5173 (Tab: 'Simulation (1d=1m)')" -ForegroundColor Cyan
+Write-Host "   Interactive API Explorer:   http://localhost:5173 (Tab: 'API Explorer')" -ForegroundColor Cyan
+Write-Host "   Spring Boot REST API:       http://localhost:8080" -ForegroundColor Yellow
+Write-Host "   Telemetry and Dashboard:    http://localhost:8080/api/analytics/dashboard" -ForegroundColor Yellow
+Write-Host "   Real-Time SSE Event Stream: http://localhost:8080/api/events/stream" -ForegroundColor Yellow
+Write-Host "   H2 Database Web Console:    http://localhost:8080/h2-console" -ForegroundColor Magenta
+Write-Host "      (JDBC URL: jdbc:h2:mem:stockpulsedb | User: sa | Password: [blank])" -ForegroundColor Gray
+Write-Host "   --------------------------------------------------------------------" -ForegroundColor Gray
+Write-Host ""
+Write-Host "   QUICKSTART LAUNCH COMMANDS:" -ForegroundColor White
+Write-Host "   --------------------------------------------------------------------" -ForegroundColor Gray
+Write-Host "   1-Click Fullstack Launcher: .\start-stockpulse.bat (or .\start-stockpulse.ps1)" -ForegroundColor Green
+Write-Host "   Or Manual Step 1 (Backend): cd backend; mvn spring-boot:run" -ForegroundColor Yellow
+Write-Host "   Or Manual Step 2 (Frontend): cd frontend; npm run dev" -ForegroundColor Yellow
+Write-Host "========================================================================" -ForegroundColor Green
+Write-Host ""

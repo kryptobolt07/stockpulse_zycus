@@ -37,7 +37,13 @@ If your machine is missing Java 21, Maven, Node.js, or Git, run our automated pr
 # Or double-click the batch wrapper:
 .\setup-dependencies.bat
 ```
-*This installs Java 21 LTS (Temurin), Apache Maven, Node.js LTS, and Git, configures environment variables, initializes `.env`, and installs frontend NPM dependencies automatically.*
+*This script installs Java 21 LTS (Temurin), Apache Maven, Node.js LTS, and Git, interactively prompts for your Zycus LiteLLM / Gemini API Key to automatically configure `.env` (or press Enter to use default demo simulation), and installs frontend NPM dependencies.*
+
+To launch both backend and frontend simultaneously with live link displays and automatic browser launch:
+```powershell
+# 1-Click Fullstack Launcher (starts Port 8080 & Port 5173 together)
+.\start-stockpulse.bat   # Or .\start-stockpulse.ps1
+```
 
 ---
 
