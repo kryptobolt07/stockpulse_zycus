@@ -19,7 +19,9 @@ import {
   Radio,
   DollarSign,
   Box,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface SimulationLabProps {
@@ -63,6 +65,7 @@ export interface SimulationLogEntry {
     | 'SYSTEM';
   title: string;
   detail: string;
+  fullReasoning?: string;
   productId?: string;
   productName?: string;
   priceDiff?: string;
@@ -96,6 +99,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
   const [inboundShipments, setInboundShipments] = useState<InboundShipment[]>([]);
   const [logs, setLogs] = useState<SimulationLogEntry[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
+  const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
 
   const [cumulativeRevenue, setCumulativeRevenue] = useState<number>(0);
   const [totalOrdersPlaced, setTotalOrdersPlaced] = useState<number>(0);
@@ -112,6 +116,18 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
       setLiveProducts(initialProducts);
     }
   }, [initialProducts]);
+
+  const toggleExpand = (id: string) => {
+    setExpandedLogIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // Helper to add log entries
   const addLog = useCallback(
@@ -257,12 +273,13 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                 addLog(
                   'LLM_REASONING',
                   `Gemini 2.5 Tradeoff Proposal Generated`,
-                  `Price: $${pricingProp.currentPrice.toFixed(2)} → $${pricingProp.recommendedPrice.toFixed(2)} (${pricingProp.changeDirection}, ${(pricingProp.confidence * 100).toFixed(0)}% conf). Reorder: +${reorderProp.recommendedQuantity} units (Lead time: ${reorderProp.suggestedLeadTimeDays}d).\n\nReasoning: "${pricingProp.reasoning.substring(0, 180)}..."`,
+                  `Price: $${pricingProp.currentPrice.toFixed(2)} → $${pricingProp.recommendedPrice.toFixed(2)} (${pricingProp.changeDirection}, ${(pricingProp.confidence * 100).toFixed(0)}% conf). Reorder: +${reorderProp.recommendedQuantity} units (Lead time: ${reorderProp.suggestedLeadTimeDays}d).`,
                   {
                     productId: targetProduct.id,
                     productName: targetProduct.name,
                     confidence: pricingProp.confidence,
                     priceDiff: `$${pricingProp.recommendedPrice.toFixed(2)}`,
+                    fullReasoning: pricingProp.reasoning || reorderProp.reasoning,
                   }
                 );
 
@@ -464,6 +481,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
     setStockoutsPrevented(0);
     setAiPriceChangesCount(0);
     setLogs([]);
+    setExpandedLogIds(new Set());
 
     await api.resetDatabase();
     await onRefreshData();
@@ -502,64 +520,64 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Simulation Hero Master Control Bar */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
-        {/* Background Ambient Glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/5 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-600/5 dark:bg-cyan-600/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Simulation Command Center Master Bar (Subtle darker slate shade matching theme) */}
+      <div className="p-4 sm:p-6 rounded-3xl bg-slate-100/90 dark:bg-slate-900/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+        {/* Ambient Glow */}
+        <div className="absolute top-0 right-0 w-80 sm:w-96 h-80 sm:h-96 bg-indigo-600/5 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 sm:w-96 h-80 sm:h-96 bg-cyan-600/5 dark:bg-cyan-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 space-y-5">
+        <div className="relative z-10 space-y-4 sm:space-y-5">
           {/* Top Bar: Title & Simulation Clock HUD */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-cyan-500 p-0.5 shadow-sm shadow-indigo-500/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-cyan-500 p-0.5 shadow-sm shadow-indigo-500/20 shrink-0">
                 <div className="w-full h-full bg-white dark:bg-slate-950 rounded-[14px] flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                  <BrainCircuit className="w-6 h-6 animate-pulse" />
+                  <BrainCircuit className="w-5 sm:w-6 h-5 sm:h-6 animate-pulse" />
                 </div>
               </div>
               <div>
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                     Live Autonomous Commerce Simulation Lab
                   </h2>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold flex items-center gap-1.5 ${
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold flex items-center gap-1.5 ${
                     isRunning
                       ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-pulse'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
                   }`}>
                     <span className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
-                    {isRunning ? 'SIMULATION LIVE' : 'PAUSED'}
+                    {isRunning ? 'LIVE' : 'PAUSED'}
                   </span>
                 </div>
-                <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">
-                  1 Simulated Day = 1 Real Minute (60s) &bull; Continuous Agent Loop with Real LLM Inferences &amp; Freight Lead Times
+                <p className="text-[11px] sm:text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                  1 Simulated Day = 1 Real Minute (60s) &bull; Continuous Gemini 2.5 Flash loop &amp; freight lead times
                 </p>
               </div>
             </div>
 
             {/* Time Machine Clock HUD */}
-            <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-950/80 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800/80">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                  <Clock className="w-5 h-5" />
+            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 bg-white/90 dark:bg-slate-950/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                  <Clock className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-[10.5px] uppercase font-mono tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+                  <div className="text-[9.5px] uppercase font-mono tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
                     Simulated World Time
                   </div>
-                  <div className="text-base font-mono font-bold text-slate-900 dark:text-white">
+                  <div className="text-sm sm:text-base font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                     {formatSimTime()}
                   </div>
                 </div>
               </div>
 
-              <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+              <div className="h-7 w-px bg-slate-200 dark:bg-slate-800" />
 
-              <div className="hidden sm:block">
-                <div className="text-[10.5px] uppercase font-mono tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
-                  Real Elapsed
+              <div>
+                <div className="text-[9.5px] uppercase font-mono tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+                  Elapsed
                 </div>
-                <div className="text-sm font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                <div className="text-xs sm:text-sm font-mono font-bold text-cyan-600 dark:text-cyan-400 whitespace-nowrap">
                   {formatRealElapsed()}
                 </div>
               </div>
@@ -567,12 +585,12 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
           </div>
 
           {/* Master Simulation Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             {/* Play/Pause & Speed Buttons */}
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setIsRunning(!isRunning)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xs font-bold transition-all shadow-xs ${
+                className={`flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-mono text-xs font-bold transition-all shadow-xs ${
                   isRunning
                     ? 'bg-amber-500 hover:bg-amber-600 text-white'
                     : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -592,18 +610,18 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
               </button>
 
               {/* Speed Switchers */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+              <div className="flex items-center bg-white dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
                 {[1, 2, 5].map(spd => (
                   <button
                     key={spd}
                     onClick={() => setPlaybackSpeed(spd)}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg transition-all ${
                       playbackSpeed === spd
-                        ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs'
+                        ? 'bg-indigo-600 text-white font-bold shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {spd}x {spd === 1 ? '(60s/d)' : spd === 2 ? '(30s/d)' : '(12s/d)'}
+                    {spd}x {spd === 1 ? '(60s)' : spd === 2 ? '(30s)' : '(12s)'}
                   </button>
                 ))}
               </div>
@@ -611,7 +629,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
               {/* Reset Button */}
               <button
                 onClick={handleResetSimulation}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
                 title="Reset simulation time and catalog"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -620,37 +638,37 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
             </div>
 
             {/* Automation Policy Toggles */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-950 px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
                 <input
                   type="checkbox"
                   checked={autoApproveAi}
                   onChange={e => setAutoApproveAi(e.target.checked)}
-                  className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                  className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
                 />
                 <span className="text-slate-700 dark:text-slate-300">
-                  Auto-Approve AI (<strong className="text-indigo-600 dark:text-indigo-400">&ge; 85% conf</strong>)
+                  Auto-Approve AI (<strong className="text-indigo-600 dark:text-indigo-400">&ge;85% conf</strong>)
                 </span>
               </label>
 
               {/* Surge Injector Shortcut */}
               <button
                 onClick={() => handleInjectSurge()}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 transition-all"
               >
                 <Zap className="w-3.5 h-3.5 text-cyan-500" />
-                <span>Inject Viral Surge (+15 Orders)</span>
+                <span>Surge (+15 Orders)</span>
               </button>
             </div>
           </div>
 
           {/* Day Progress Ring Bar */}
-          <div className="space-y-1.5 pt-2">
+          <div className="space-y-1.5 pt-1">
             <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-slate-400">
               <span>Day {simulatedDay} Progress</span>
               <span>{Math.round(dayProgressPct)}% Completed</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-950 overflow-hidden border border-slate-200 dark:border-slate-800/80">
+            <div className="w-full h-2 rounded-full bg-white dark:bg-slate-950 overflow-hidden border border-slate-200 dark:border-slate-800/80">
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-400 transition-all duration-300 ease-linear rounded-full"
                 style={{ width: `${dayProgressPct}%` }}
@@ -661,56 +679,56 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
       </div>
 
       {/* Real-Time Telemetry HUD (4 Metric Cards) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 font-mono">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 text-xs">
             <span>Cumulative Revenue</span>
             <DollarSign className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1 truncate">
             ${cumulativeRevenue.toFixed(2)}
           </div>
           <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
-            <span>{totalOrdersPlaced} orders completed</span>
+            <TrendingUp className="w-3 h-3 shrink-0" />
+            <span className="truncate">{totalOrdersPlaced} orders</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 text-xs">
             <span>Stockouts Prevented</span>
             <ShieldCheck className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1 truncate">
             {stockoutsPrevented}
           </div>
-          <div className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1">
+          <div className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1 truncate">
             Autonomous replenishment POs
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 text-xs">
             <span>AI Price Updates</span>
             <Sparkles className="w-4 h-4 text-cyan-500" />
           </div>
-          <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1 truncate">
             {aiPriceChangesCount}
           </div>
-          <div className="text-[11px] text-cyan-600 dark:text-cyan-400 mt-1">
+          <div className="text-[11px] text-cyan-600 dark:text-cyan-400 mt-1 truncate">
             Dynamic margin optimizations
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 text-xs">
             <span>Inbound Freight POs</span>
             <Truck className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+          <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1 truncate">
             {inboundShipments.length} in transit
           </div>
-          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 truncate">
             Live supplier lead times
           </div>
         </div>
@@ -721,10 +739,10 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
         {/* Left Column: Live Catalog Status & Inbound Shipments (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Active Inbound Shipments Tracker */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3.5">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                   <Truck className="w-4 h-4" />
                 </div>
                 <div>
@@ -736,7 +754,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                   </p>
                 </div>
               </div>
-              <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+              <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
                 {inboundShipments.length} Active
               </span>
             </div>
@@ -749,7 +767,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
+              <div className="space-y-2.5 max-h-[260px] sm:max-h-[300px] overflow-y-auto">
                 {inboundShipments.map(shipment => {
                   const progressPct = Math.min(
                     100,
@@ -763,7 +781,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                   return (
                     <div
                       key={shipment.id}
-                      className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 font-mono text-xs"
+                      className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 font-mono text-xs"
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -801,10 +819,10 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
           </div>
 
           {/* Live Catalog Stock Tracker */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3.5">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                   <Box className="w-4 h-4" />
                 </div>
                 <div>
@@ -818,7 +836,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2 max-h-[380px] overflow-y-auto">
+            <div className="space-y-2 max-h-[300px] sm:max-h-[380px] overflow-y-auto">
               {liveProducts.map(product => {
                 const isLow = product.stockLevel <= product.reorderThreshold;
                 const pct = Math.min(100, Math.round((product.stockLevel / (product.reorderThreshold * 2.5)) * 100));
@@ -861,11 +879,11 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
 
         {/* Right Column: Master Real-Time Simulation Event Feed (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[760px]">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[520px] sm:h-[680px] lg:h-[760px]">
             {/* Header & Filter Pills */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <Radio className="w-4 h-4 animate-pulse" />
                 </div>
                 <div>
@@ -899,7 +917,7 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
             {/* Event Stream Container */}
             <div
               ref={logsContainerRef}
-              className="flex-1 overflow-y-auto space-y-3 p-2 pt-4 divide-y divide-slate-100 dark:divide-slate-800/40"
+              className="flex-1 overflow-y-auto space-y-3 p-1 sm:p-2 pt-3 sm:pt-4 divide-y divide-slate-100 dark:divide-slate-800/40"
             >
               {filteredLogs.length === 0 ? (
                 <div className="py-20 text-center text-slate-400 dark:text-slate-500 font-mono text-xs">
@@ -907,6 +925,9 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                 </div>
               ) : (
                 filteredLogs.map(log => {
+                  const isAiTab = selectedFilter === 'AI';
+                  const isExpanded = isAiTab || expandedLogIds.has(log.id);
+
                   let badge = (
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                       {log.type}
@@ -978,12 +999,50 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                         </span>
                       </div>
 
-                      <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans pl-1 whitespace-pre-wrap">
+                      {/* Main Detail Summary */}
+                      <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans pl-1 whitespace-pre-wrap break-words">
                         {log.detail}
                       </div>
 
+                      {/* Full AI Reasoning Section (Expanded in AI tab or when toggled) */}
+                      {log.fullReasoning && (
+                        <div className="pl-1">
+                          {isExpanded ? (
+                            <div className="mt-2 p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 font-sans text-xs text-slate-800 dark:text-slate-200 leading-relaxed space-y-2 animate-in fade-in duration-150">
+                              <div className="flex items-center justify-between">
+                                <div className="font-mono font-bold text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                  <span>Gemini 2.5 Flash Autonomous Tradeoff Reasoning</span>
+                                </div>
+                                {!isAiTab && (
+                                  <button
+                                    onClick={() => toggleExpand(log.id)}
+                                    className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5"
+                                  >
+                                    <span>Collapse</span>
+                                    <ChevronUp className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="whitespace-pre-wrap break-words text-slate-700 dark:text-slate-300 font-sans text-xs pt-1">
+                                {log.fullReasoning}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => toggleExpand(log.id)}
+                              className="mt-1 text-[11px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                            >
+                              <span>View Full AI Reasoning</span>
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Badges / Metrics Footer */}
                       {(log.priceDiff || log.stockDiff || log.confidence) && (
-                        <div className="flex items-center gap-2 pt-1 font-mono text-[10.5px]">
+                        <div className="flex items-center gap-2 pt-1 font-mono text-[10.5px] flex-wrap pl-1">
                           {log.priceDiff && (
                             <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700">
                               Price: {log.priceDiff}
@@ -1012,4 +1071,3 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
     </div>
   );
 };
-
