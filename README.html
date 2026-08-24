@@ -568,75 +568,207 @@
       </div>
     </section>
 
-    <!-- Section 2: Backend Architecture & Layer Breakdown (Beginner Friendly) -->
+    <!-- Section 2: Enterprise Domain-Driven Architecture & Component Reference -->
     <section id="backend-architecture">
-      <h2>Backend Structure &amp; Architectural Layers</h2>
+      <h2>Enterprise Domain-Driven Architecture: 5-Layer Backend Blueprint</h2>
       <p>
-        StockPulse's backend is built with <strong>Java 21</strong> and <strong>Spring Boot 3.3.4</strong> using Domain-Driven Design (DDD) and the Controller-Service-Repository pattern. It is designed so that even someone new to enterprise architecture can follow the exact flow of data.
+        StockPulse is engineered using <strong>Java 21 LTS</strong> and <strong>Spring Boot 3.3.4</strong> following strict <strong>Domain-Driven Design (DDD)</strong> and the enterprise <strong>Controller-Service-Repository</strong> pattern with decoupled asynchronous event-driven agents.
       </p>
 
       <div class="explainer-card">
-        <div class="explainer-title">🎓 Student / Beginner's Guide: How the 5 Backend Layers Work Together</div>
+        <div class="explainer-title">🏛️ Enterprise System Decomposition: 5 Core Architectural Layers</div>
         <div class="grid-4" style="margin-top: 14px;">
           <div class="card" style="background: rgba(17, 24, 39, 0.7);">
-            <div style="font-weight: 700; color: #818cf8; font-size: 13px; margin-bottom: 4px;">1. Controllers (`/controller`)</div>
+            <div style="font-weight: 700; color: #818cf8; font-size: 13px; margin-bottom: 4px;">1. HTTP Controllers (`/controller`)</div>
             <p style="font-size: 12px; margin: 0;">
-              The "front desk" of the server. They receive HTTP requests from the React frontend (e.g. <code>POST /products/1/orders</code>), validate input fields, and pass work to the Service layer.
+              Exposes RESTful endpoints and Server-Sent Events (SSE). Handles request validation, query filtering, and delegates execution to transactional services.
             </p>
           </div>
           <div class="card" style="background: rgba(17, 24, 39, 0.7);">
-            <div style="font-weight: 700; color: #38bdf8; font-size: 13px; margin-bottom: 4px;">2. Services (`/service`)</div>
+            <div style="font-weight: 700; color: #38bdf8; font-size: 13px; margin-bottom: 4px;">2. Transactional Services (`/service`)</div>
             <p style="font-size: 12px; margin: 0;">
-              The "business brain". Handles database updates, checks inventory thresholds, and fires background events when an order creates a stock alert or surge.
+              Manages ACID state transitions, stock level updates, demand velocity calculations, and publishes decoupled Spring domain events.
             </p>
           </div>
           <div class="card" style="background: rgba(17, 24, 39, 0.7);">
-            <div style="font-weight: 700; color: #34d399; font-size: 13px; margin-bottom: 4px;">3. Agent Engine (`/agent` &amp; `/ai`)</div>
+            <div style="font-weight: 700; color: #34d399; font-size: 13px; margin-bottom: 4px;">3. Agent &amp; Event Bus (`/agent`)</div>
             <p style="font-size: 12px; margin: 0;">
-              Asynchronous background workers. Listens to events, crafts prompts with category benchmarks, calls the LiteLLM Gateway (Gemini 2.5 Flash), and clamps bounds.
+              Asynchronous worker pool (<code>@Async</code>). Listens to inventory and surge triggers, prevents duplicate evaluations, and coordinates LLM invocations.
             </p>
           </div>
           <div class="card" style="background: rgba(17, 24, 39, 0.7);">
-            <div style="font-weight: 700; color: #fbbf24; font-size: 13px; margin-bottom: 4px;">4. Repositories (`/repository`)</div>
+            <div style="font-weight: 700; color: #fbbf24; font-size: 13px; margin-bottom: 4px;">4. AI Gateway &amp; Engine (`/ai` &amp; `/engine`)</div>
             <p style="font-size: 12px; margin: 0;">
-              Spring Data JPA interfaces that talk directly to the H2 database, providing instant CRUD queries and custom average velocity aggregation.
+              Connects to Zycus LiteLLM Gateway (Gemini 2.5 Flash), sanitizes structured JSON schemas, enforces sane bounds clamping, and manages swappable strategies.
             </p>
           </div>
         </div>
       </div>
 
-      <div class="diagram-card">
+      <!-- Exhaustive Controllers & Web Endpoints Breakdown -->
+      <h3 style="margin-top: 24px; font-size: 15px; color: #818cf8; font-weight: 700;">📡 Complete Controller &amp; Endpoint Reference (7 REST/SSE Controllers)</h3>
+      
+      <div class="table-container" style="margin-top: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 22%;">Controller Class</th>
+              <th style="width: 28%;">Primary Routes</th>
+              <th style="width: 50%;">Functional Responsibility &amp; Execution Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>ProductController</code></td>
+              <td>
+                <span class="badge badge-primary">GET /products</span><br>
+                <span class="badge badge-primary">GET /products/{id}</span><br>
+                <span class="badge badge-primary">POST /products</span><br>
+                <span class="badge badge-primary">PATCH /products/{id}/stock</span><br>
+                <span class="badge badge-primary">POST /products/{id}/orders</span><br>
+                <span class="badge badge-emerald">POST .../suggest-pricing</span><br>
+                <span class="badge badge-emerald">POST .../suggest-reorder</span><br>
+                <span class="badge badge-cyan">POST .../stream</span>
+              </td>
+              <td>
+                Master catalog controller. Serves filtered products by status/category, accepts sales orders with instant <code>&lt;10ms</code> stock decrementing, handles manual AI advisor requests, and streams live token-by-token reasoning via SSE.
+              </td>
+            </tr>
+            <tr>
+              <td><code>PricingSuggestionController</code></td>
+              <td>
+                <span class="badge badge-primary">GET /pricing-suggestions</span><br>
+                <span class="badge badge-primary">PATCH /pricing-suggestions/{id}</span>
+              </td>
+              <td>
+                Human governance controller for dynamic pricing. Retrieves pending or historical price proposals and processes merchandiser decisions (<code>ACCEPTED</code> updates live product price; <code>REJECTED</code> logs dismissal).
+              </td>
+            </tr>
+            <tr>
+              <td><code>ReorderSuggestionController</code></td>
+              <td>
+                <span class="badge badge-primary">GET /reorder-suggestions</span><br>
+                <span class="badge badge-primary">PATCH /reorder-suggestions/{id}</span>
+              </td>
+              <td>
+                Human governance controller for stock replenishment. Retrieves pending replenishment batches and simulates warehouse inbound physical delivery (<code>ACCEPTED</code> increments product stock; <code>REJECTED</code> dismisses PO).
+              </td>
+            </tr>
+            <tr>
+              <td><code>ActivityEventController</code></td>
+              <td>
+                <span class="badge badge-cyan">GET /api/events/stream</span>
+              </td>
+              <td>
+                Reactive Server-Sent Events (SSE) controller. Maintains long-lived HTTP event streams with the frontend to broadcast background agent pipeline lifecycle events (<code>LLM_EVALUATION_START</code>, <code>LLM_EVALUATION_COMPLETE</code>).
+              </td>
+            </tr>
+            <tr>
+              <td><code>AnalyticsController</code></td>
+              <td>
+                <span class="badge badge-primary">GET /api/analytics/dashboard</span>
+              </td>
+              <td>
+                Telemetry &amp; KPI aggregation controller. Computes real-time catalog counts, low stock counts, out-of-stock counts, pending action queues, and category average demand velocities.
+              </td>
+            </tr>
+            <tr>
+              <td><code>StrategyConfigController</code></td>
+              <td>
+                <span class="badge badge-primary">GET /api/config/strategy</span><br>
+                <span class="badge badge-primary">POST /api/config/strategy</span>
+              </td>
+              <td>
+                Zero-downtime runtime policy switcher. Allows merchandisers and administrators to hot-swap between <code>AI_POWERED</code> (Gemini 2.5 Flash) and <code>RULE_BASED</code> (Deterministic rule engine) on the fly.
+              </td>
+            </tr>
+            <tr>
+              <td><code>SeedController</code></td>
+              <td>
+                <span class="badge badge-primary">POST /api/seed/reset</span>
+              </td>
+              <td>
+                Sandbox reset controller. Resets database tables and re-seeds the pristine Addendum A 8-product benchmark state for repeatable demonstration and testing.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Services & Core Domain Components -->
+      <h3 style="margin-top: 24px; font-size: 15px; color: #34d399; font-weight: 700;">⚙️ Domain Services, Asynchronous Agents &amp; AI Components</h3>
+      
+      <div class="grid-3" style="margin-top: 10px;">
+        <div class="card">
+          <div style="font-weight: 700; color: #818cf8; font-size: 13px; margin-bottom: 4px;">ProductService</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Executes transactional sales order ingestion, calculates rolling demand velocities, updates inventory levels, and publishes decoupled <code>ProductStockEvent</code> and <code>DemandSpikeEvent</code>.
+          </p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #38bdf8; font-size: 13px; margin-bottom: 4px;">PricingSuggestionService</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Manages the state machine lifecycle for price adjustments (<code>PENDING</code> &rarr; <code>ACCEPTED</code> / <code>REJECTED</code>), updating live catalog prices upon human sign-off.
+          </p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #34d399; font-size: 13px; margin-bottom: 4px;">ReorderSuggestionService</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Governs replenishment purchase orders, automatically transitioning stock from <code>OUT_OF_STOCK</code> back to <code>ACTIVE</code> upon inbound shipment receiving.
+          </p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #fbbf24; font-size: 13px; margin-bottom: 4px;">InventoryEventListener</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Asynchronous <code>@Async</code> worker that receives domain events off the Spring event bus, preventing any blocking of incoming customer sales traffic.
+          </p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #f43f5e; font-size: 13px; margin-bottom: 4px;">AgenticAdvisorService</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Deduplication gatekeeper that checks for existing active reviews before dispatching evaluation requests to the active commerce advisor.
+          </p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #a855f7; font-size: 13px; margin-bottom: 4px;">LLMGateway &amp; AiStreamService</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Communicates with Zycus LiteLLM Gateway / Gemini 2.5 Flash, extracts markdown-fenced JSON, enforces mathematical sane bounds, and streams token tokens over SSE.
+          </p>
+        </div>
+      </div>
+
+      <div class="diagram-card" style="margin-top: 16px;">
         <div class="mermaid">
 flowchart TD
-    Client["React 18 Merchandising Console"]
-    Controller["ProductController &amp; PricingController"]
-    Service["ProductService (Transactional Domain)"]
-    Repo["ProductRepository (Spring Data JPA)"]
+    Client["React 18 Merchandising Console &amp; Simulation Lab"]
+    Controller["REST Controllers (7 Endpoints)"]
+    Service["Transactional Domain Services"]
+    Repo["Spring Data JPA Repositories"]
     H2[("In-Memory H2 Database")]
     Bus["Spring Async EventBus"]
-    Listener["InventoryEventListener (Async Worker)"]
-    AdvisorService["AgenticAdvisorService"]
+    Listener["InventoryEventListener (@Async Worker)"]
+    AdvisorService["AgenticAdvisorService (Deduplication Gate)"]
     LLM["LLMGateway (Gemini 2.5 Flash)"]
-    SSE["ActivityStreamService (SSE Stream)"]
+    SSE["ActivityStreamService (SSE Event Stream)"]
 
-    Client -->|1. Simulates Order or Stock Update| Controller
-    Controller -->|2. Calls Service Layer| Service
-    Service -->|3. Persists Stock in DB| Repo
+    Client -->|1. Order Ingestion or Trigger| Controller
+    Controller -->|2. Transactional Mutation| Service
+    Service -->|3. Persists in DB| Repo
     Repo --> H2
     Service -->|4. Publishes Domain Event| Bus
-    Service -->|5. Returns HTTP 200 OK| Client
+    Service -->|5. Instant HTTP 200 OK (<10ms)| Client
     
-    Bus -->|6. Dispatches to Worker| Listener
-    Listener -->|7. Evaluates Trigger Signal| AdvisorService
-    AdvisorService -->|8. Emits Evaluation Start| SSE
-    SSE -.->|9. Live SSE HUD Alert| Client
-    AdvisorService -->|10. Calls LiteLLM Gateway| LLM
-    LLM -->|11. Validates Sane Bounds| AdvisorService
-    AdvisorService -->|12. Saves Pending Proposals| Repo
-    AdvisorService -->|13. Emits Evaluation Complete| SSE
-    SSE -.->|14. Auto-syncs Review Queue| Client
+    Bus -->|6. Dispatches to Async Pool| Listener
+    Listener -->|7. Evaluates Signal & Velocity| AdvisorService
+    AdvisorService -->|8. Emits LLM_EVALUATION_START| SSE
+    SSE -.->|9. Live SSE Stream Alert| Client
+    AdvisorService -->|10. Queries LiteLLM Gateway| LLM
+    LLM -->|11. Validates Sane Bounds Guardrails| AdvisorService
+    AdvisorService -->|12. Persists Pending Proposals| Repo
+    AdvisorService -->|13. Emits LLM_EVALUATION_COMPLETE| SSE
+    SSE -.->|14. Auto-Refreshes Governance Queue| Client
         </div>
-        <div class="diagram-caption">Figure 1: Complete 5-Layer Backend Architecture &amp; Asynchronous Agent Pipeline</div>
+        <div class="diagram-caption">Figure 1: Complete 5-Layer Enterprise Backend Architecture &amp; Asynchronous Agent Pipeline</div>
       </div>
     </section>
 
@@ -869,6 +1001,72 @@ flowchart TD
             <span class="formula-label">Margin Floor Protection</span>
             <span class="formula-math">$$P_{\text{clamped}} \ge \text{MarginFloor} \quad (\text{if specified})$$</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Agentic AI vs Rule-Based Deep Dive Comparison -->
+      <h3 style="margin-top: 28px; font-size: 16px; color: #818cf8; font-weight: 700;">⚖️ Strategic Advantages of the Agentic Approach vs. Rule-Based Systems</h3>
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 14px;">
+        While deterministic rule engines offer predictable low-complexity baselines, modern commerce requires evaluating non-linear multi-variable trade-offs that static IF-THEN rules cannot capture.
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 22%;">Evaluation Dimension</th>
+              <th style="width: 38%;">Traditional Rule-Based System</th>
+              <th style="width: 40%; color: #34d399;">StockPulse Agentic AI Approach (Gemini 2.5)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Tradeoff Reasoning</strong></td>
+              <td><span style="color: #fb7185;">Rigid &amp; Blind:</span> Applies static multipliers (e.g. always $+10\%$ price increase when $S \le T_{\text{threshold}}$), regardless of whether demand velocity is 0 or 50 orders/day.</td>
+              <td><span style="color: #34d399;">Multi-Variable Synthesis:</span> Simultaneously models burn runway (hours to stockout), supplier turnaround time, margin floor constraints, and category velocity momentum to determine whether a defensive $+8.3\%$ hike or clearance markdown is optimal.</td>
+            </tr>
+            <tr>
+              <td><strong>Explainability &amp; Audit Rationale</strong></td>
+              <td><span style="color: #fb7185;">Opaque Triggers:</span> Outputs generic hardcoded status strings (e.g. <code>Trigger: INVENTORY_LOW</code>) with zero business justification for merchandisers.</td>
+              <td><span style="color: #34d399;">Executive-Grade Justification:</span> Produces contextual, audit-ready reasoning explaining the exact economic math and strategic trade-offs behind every proposal.</td>
+            </tr>
+            <tr>
+              <td><strong>Confidence &amp; Risk Scoring</strong></td>
+              <td><span style="color: #fb7185;">Binary (0 or 1):</span> Fixed thresholds with no nuance. Every breach is treated as equally urgent, causing alert fatigue.</td>
+              <td><span style="color: #34d399;">Bayesian Confidence Score:</span> Calculates dynamic confidence $\in [0.0, 1.0]$, enabling safe automated execution for high-confidence actions ($\ge 85\%$) while escalating anomalies to merchandisers.</td>
+            </tr>
+            <tr>
+              <td><strong>Contextual Category Awareness</strong></td>
+              <td><span style="color: #fb7185;">Isolated Silos:</span> Evaluates each SKU in isolation against fixed constants, blind to broader catalog or market trends.</td>
+              <td><span style="color: #34d399;">Holistic Benchmark Comparison:</span> Evaluates SKU velocity against real-time category peer averages ($\bar{V}_{\text{category}}$) to differentiate true viral surges from localized traffic noise.</td>
+            </tr>
+            <tr>
+              <td><strong>Operational Adaptability</strong></td>
+              <td><span style="color: #fb7185;">High Maintenance Overhead:</span> Every supplier change or seasonal shift requires software engineering refactoring, code commits, and redeployment.</td>
+              <td><span style="color: #34d399;">Prompt &amp; Policy Agility:</span> Adapts instantly to updated supplier lead times, seasonal policies, or merchant guidelines via structured system prompts with zero codebase alterations.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-3" style="margin-top: 14px;">
+        <div class="card" style="border-color: rgba(99, 102, 241, 0.25);">
+          <div style="font-weight: 700; color: #818cf8; font-size: 13px; margin-bottom: 4px;">1. Surge Margin Maximization</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Captures dynamic surge elasticity on viral demand spikes (+4% to +15%) rather than leaving thousands of dollars of margin on the table at flat baseline prices.
+          </p>
+        </div>
+        <div class="card" style="border-color: rgba(52, 211, 153, 0.25);">
+          <div style="font-weight: 700; color: #34d399; font-size: 13px; margin-bottom: 4px;">2. Zero Stockout Surprises</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Predicts stockout exhaustion hours ahead of time, calculating dynamic supplier lead-time buffers to proactively prevent out-of-stock downtime.
+          </p>
+        </div>
+        <div class="card" style="border-color: rgba(251, 191, 36, 0.25);">
+          <div style="font-weight: 700; color: #fbbf24; font-size: 13px; margin-bottom: 4px;">3. Human-in-the-Loop Governance</div>
+          <p style="font-size: 12px; color: #94a3b8;">
+            Merchandisers retain 100% ultimate authority with one-click approval workflows, high-contrast review decks, and verifiable AI audit trails.
+          </p>
         </div>
       </div>
     </section>

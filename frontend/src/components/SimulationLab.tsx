@@ -70,6 +70,7 @@ export interface SimulationLogEntry {
   productName?: string;
   priceDiff?: string;
   stockDiff?: string;
+  remainingStock?: number;
   confidence?: number;
   badgeColor?: string;
 }
@@ -209,17 +210,169 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
     [liveProducts, addLog, onRefreshData]
   );
 
+  // --- Helper to trigger Real AI Evaluation & Auto-Replenishment ---
+  const triggerProductAiEvaluation = useCallback(
+    async (targetProduct: Product, trigger: string) => {
+      if (activeEvaluations.has(targetProduct.id)) return;
+
+      setActiveEvaluations(prev => new Set(prev).add(targetProduct.id));
+
+      addLog(
+        'AI_SIGNAL',
+        `Autonomous Signal: ${trigger}`,
+        `${targetProduct.name} stock level (${targetProduct.stockLevel} units) is at or below threshold (${targetProduct.reorderThreshold}). Invoking Gemini 2.5 Flash Commerce Advisor for replenishment & pricing...`,
+        {
+          productId: targetProduct.id,
+          productName: targetProduct.name,
+          remainingStock: targetProduct.stockLevel,
+        }
+      );
+
+      // Execute Real AI Proposal
+      setTimeout(async () => {
+        try {
+          const [pricingProp, reorderProp] = await Promise.all([
+            api.suggestPricing(targetProduct.id),
+            api.suggestReorder(targetProduct.id),
+          ]);
+
+          addLog(
+            'LLM_REASONING',
+            `Gemini 2.5 Tradeoff Proposal Generated`,
+            `Price: $${pricingProp.currentPrice.toFixed(2)} → $${pricingProp.recommendedPrice.toFixed(2)} (${pricingProp.changeDirection}, ${(pricingProp.confidence * 100).toFixed(0)}% conf). Reorder: +${reorderProp.recommendedQuantity} units (Lead time: ${reorderProp.suggestedLeadTimeDays}d).`,
+            {
+              productId: targetProduct.id,
+              productName: targetProduct.name,
+              confidence: pricingProp.confidence,
+              priceDiff: `$${pricingProp.recommendedPrice.toFixed(2)}`,
+              remainingStock: targetProduct.stockLevel,
+              fullReasoning: pricingProp.reasoning || reorderProp.reasoning,
+            }
+          );
+
+          // Check Auto-Approve Policy
+          if (autoApproveAi && pricingProp.confidence >= autoApproveConfidenceThreshold) {
+            // Auto-accept pricing
+            const acceptedPrice = await api.decidePricingSuggestion(pricingProp.id, 'ACCEPTED');
+            setAiPriceChangesCount(prev => prev + 1);
+
+            // Update live product price
+            setLiveProducts(prev =>
+              prev.map(p =>
+                p.id === targetProduct.id
+                  ? { ...p, currentPrice: acceptedPrice.recommendedPrice }
+                  : p
+              )
+            );
+
+            addLog(
+              'AUTO_APPROVED',
+              `Autonomous Approval: Price Changed to $${acceptedPrice.recommendedPrice.toFixed(2)}`,
+              `Confidence score of ${(pricingProp.confidence * 100).toFixed(0)}% exceeded auto-approve policy threshold (${(autoApproveConfidenceThreshold * 100).toFixed(0)}%). New live price adopted.`,
+              {
+                productId: targetProduct.id,
+                productName: targetProduct.name,
+                priceDiff: `$${acceptedPrice.recommendedPrice.toFixed(2)}`,
+                confidence: pricingProp.confidence,
+              }
+            );
+
+            // Auto-dispatch Inbound Purchase Order with Real Lead Time
+            // 1 Day = 60s at 1x speed
+            const durationSecs = Math.max(10, Math.round((reorderProp.suggestedLeadTimeDays * 60) / playbackSpeed));
+
+            const newShipment: InboundShipment = {
+              id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+              suggestionId: reorderProp.id,
+              productId: targetProduct.id,
+              productName: targetProduct.name,
+              sku: targetProduct.sku,
+              quantity: reorderProp.recommendedQuantity,
+              leadTimeDays: reorderProp.suggestedLeadTimeDays,
+              totalDurationSeconds: durationSecs,
+              remainingSeconds: durationSecs,
+              dispatchedAtDay: simulatedDay,
+              dispatchedAtHour: simulatedHour,
+              arrivalDay: simulatedDay + reorderProp.suggestedLeadTimeDays,
+              status: 'IN_TRANSIT',
+            };
+
+            setInboundShipments(prev => [...prev, newShipment]);
+
+            addLog(
+              'PO_DISPATCHED',
+              `Purchase Order Created & Dispatched: +${reorderProp.recommendedQuantity} units`,
+              `PO ${newShipment.id} sent to supplier. Estimated Lead Time: ${reorderProp.suggestedLeadTimeDays} simulated days (${durationSecs}s real-time at ${playbackSpeed}x).`,
+              {
+                productId: targetProduct.id,
+                productName: targetProduct.name,
+                stockDiff: `+${reorderProp.recommendedQuantity} (in transit)`,
+              }
+            );
+          } else {
+            addLog(
+              'MANUAL_REQUIRED',
+              `Proposal Queued for Human Review`,
+              `Confidence score ${(pricingProp.confidence * 100).toFixed(0)}% flagged for merchandiser checkpoint. Visible on Governance Dashboard.`,
+              {
+                productId: targetProduct.id,
+                productName: targetProduct.name,
+              }
+            );
+          }
+
+          await onRefreshData();
+        } catch (err: any) {
+          console.error('Simulation AI evaluation error:', err);
+        } finally {
+          setActiveEvaluations(prev => {
+            const next = new Set(prev);
+            next.delete(targetProduct.id);
+            return next;
+          });
+        }
+      }, 1200);
+    },
+    [
+      activeEvaluations,
+      autoApproveAi,
+      autoApproveConfidenceThreshold,
+      playbackSpeed,
+      simulatedDay,
+      simulatedHour,
+      addLog,
+      onRefreshData,
+    ]
+  );
+
   // --- Order Traffic & Autonomous Agent Loop ---
   const runSimulationStep = useCallback(async () => {
     if (isExecutingLoop.current) return;
     isExecutingLoop.current = true;
 
     try {
-      // 1. Pick 1 to 2 random products based on traffic intensity & velocity
+      // 1. Proactive Low-Stock & Out-of-Stock Auditor (Catches 0-stock items like LED Desk Lamp)
+      const depletedProduct = liveProducts.find(
+        p =>
+          p.stockLevel <= p.reorderThreshold &&
+          !activeEvaluations.has(p.id) &&
+          !inboundShipments.some(s => s.productId === p.id && s.status === 'IN_TRANSIT')
+      );
+
+      if (depletedProduct) {
+        triggerProductAiEvaluation(
+          depletedProduct,
+          depletedProduct.stockLevel === 0 ? 'OUT_OF_STOCK_REMEDIATION' : 'INVENTORY_LOW'
+        );
+      }
+
+      // 2. Continuous Shopper Traffic on in-stock catalog SKUs
       const trafficChance = trafficIntensity === 'HIGH' ? 0.9 : trafficIntensity === 'NORMAL' ? 0.65 : 0.4;
-      if (Math.random() < trafficChance && liveProducts.length > 0) {
-        // Weighted random pick
-        const targetProduct = liveProducts[Math.floor(Math.random() * liveProducts.length)];
+      const inStockProducts = liveProducts.filter(p => p.stockLevel > 0);
+
+      if (Math.random() < trafficChance && inStockProducts.length > 0) {
+        // Pick random in-stock product
+        const targetProduct = inStockProducts[Math.floor(Math.random() * inStockProducts.length)];
 
         if (targetProduct && targetProduct.stockLevel > 0) {
           const orderQty = Math.max(1, Math.min(targetProduct.stockLevel, Math.floor(1 + Math.random() * 3)));
@@ -241,130 +394,20 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
               productId: targetProduct.id,
               productName: targetProduct.name,
               stockDiff: `-${orderQty}`,
+              remainingStock: updated.stockLevel,
             }
           );
 
-          // Check if Low Stock Breached
+          // Check if Low Stock or Surge Breached after this purchase
           const isLowStock = updated.stockLevel <= updated.reorderThreshold;
           const isSpike = updated.demandVelocity >= 8;
 
-          if ((isLowStock || isSpike) && !activeEvaluations.has(targetProduct.id)) {
-            const trigger = isLowStock ? 'INVENTORY_LOW' : 'DEMAND_SPIKE';
-            setActiveEvaluations(prev => new Set(prev).add(targetProduct.id));
-
-            addLog(
-              'AI_SIGNAL',
-              `Signal Triggered: ${trigger}`,
-              `${targetProduct.name} stock level (${updated.stockLevel}) breached threshold (${updated.reorderThreshold}). Invoking Gemini 2.5 Flash Commerce Advisor in background...`,
-              {
-                productId: targetProduct.id,
-                productName: targetProduct.name,
-              }
-            );
-
-            // Execute Real AI Proposal
-            setTimeout(async () => {
-              try {
-                const [pricingProp, reorderProp] = await Promise.all([
-                  api.suggestPricing(targetProduct.id),
-                  api.suggestReorder(targetProduct.id),
-                ]);
-
-                addLog(
-                  'LLM_REASONING',
-                  `Gemini 2.5 Tradeoff Proposal Generated`,
-                  `Price: $${pricingProp.currentPrice.toFixed(2)} → $${pricingProp.recommendedPrice.toFixed(2)} (${pricingProp.changeDirection}, ${(pricingProp.confidence * 100).toFixed(0)}% conf). Reorder: +${reorderProp.recommendedQuantity} units (Lead time: ${reorderProp.suggestedLeadTimeDays}d).`,
-                  {
-                    productId: targetProduct.id,
-                    productName: targetProduct.name,
-                    confidence: pricingProp.confidence,
-                    priceDiff: `$${pricingProp.recommendedPrice.toFixed(2)}`,
-                    fullReasoning: pricingProp.reasoning || reorderProp.reasoning,
-                  }
-                );
-
-                // Check Auto-Approve Policy
-                if (autoApproveAi && pricingProp.confidence >= autoApproveConfidenceThreshold) {
-                  // Auto-accept pricing
-                  const acceptedPrice = await api.decidePricingSuggestion(pricingProp.id, 'ACCEPTED');
-                  setAiPriceChangesCount(prev => prev + 1);
-
-                  // Update live product price
-                  setLiveProducts(prev =>
-                    prev.map(p =>
-                      p.id === targetProduct.id
-                        ? { ...p, currentPrice: acceptedPrice.recommendedPrice }
-                        : p
-                    )
-                  );
-
-                  addLog(
-                    'AUTO_APPROVED',
-                    `Autonomous Approval: Price Changed to $${acceptedPrice.recommendedPrice.toFixed(2)}`,
-                    `Confidence score of ${(pricingProp.confidence * 100).toFixed(0)}% exceeded auto-approve policy threshold (${(autoApproveConfidenceThreshold * 100).toFixed(0)}%). New live price adopted.`,
-                    {
-                      productId: targetProduct.id,
-                      productName: targetProduct.name,
-                      priceDiff: `$${acceptedPrice.recommendedPrice.toFixed(2)}`,
-                      confidence: pricingProp.confidence,
-                    }
-                  );
-
-                  // Auto-dispatch Inbound Purchase Order with Real Lead Time
-                  // 1 Day = 60s at 1x speed
-                  const durationSecs = Math.max(10, Math.round((reorderProp.suggestedLeadTimeDays * 60) / playbackSpeed));
-
-                  const newShipment: InboundShipment = {
-                    id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
-                    suggestionId: reorderProp.id,
-                    productId: targetProduct.id,
-                    productName: targetProduct.name,
-                    sku: targetProduct.sku,
-                    quantity: reorderProp.recommendedQuantity,
-                    leadTimeDays: reorderProp.suggestedLeadTimeDays,
-                    totalDurationSeconds: durationSecs,
-                    remainingSeconds: durationSecs,
-                    dispatchedAtDay: simulatedDay,
-                    dispatchedAtHour: simulatedHour,
-                    arrivalDay: simulatedDay + reorderProp.suggestedLeadTimeDays,
-                    status: 'IN_TRANSIT',
-                  };
-
-                  setInboundShipments(prev => [...prev, newShipment]);
-
-                  addLog(
-                    'PO_DISPATCHED',
-                    `Purchase Order Created & Dispatched: +${reorderProp.recommendedQuantity} units`,
-                    `PO ${newShipment.id} sent to supplier. Estimated Lead Time: ${reorderProp.suggestedLeadTimeDays} simulated days (${durationSecs}s real-time at ${playbackSpeed}x).`,
-                    {
-                      productId: targetProduct.id,
-                      productName: targetProduct.name,
-                      stockDiff: `+${reorderProp.recommendedQuantity} (in transit)`,
-                    }
-                  );
-                } else {
-                  addLog(
-                    'MANUAL_REQUIRED',
-                    `Proposal Queued for Human Review`,
-                    `Confidence score ${(pricingProp.confidence * 100).toFixed(0)}% flagged for merchandiser checkpoint. Visible on Governance Dashboard.`,
-                    {
-                      productId: targetProduct.id,
-                      productName: targetProduct.name,
-                    }
-                  );
-                }
-
-                await onRefreshData();
-              } catch (err: any) {
-                console.error('Simulation AI evaluation error:', err);
-              } finally {
-                setActiveEvaluations(prev => {
-                  const next = new Set(prev);
-                  next.delete(targetProduct.id);
-                  return next;
-                });
-              }
-            }, 1200);
+          if (
+            (isLowStock || isSpike) &&
+            !activeEvaluations.has(targetProduct.id) &&
+            !inboundShipments.some(s => s.productId === targetProduct.id && s.status === 'IN_TRANSIT')
+          ) {
+            triggerProductAiEvaluation(updated, isLowStock ? 'INVENTORY_LOW' : 'DEMAND_SPIKE');
           }
         }
       }
@@ -375,15 +418,11 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
     }
   }, [
     liveProducts,
-    trafficIntensity,
     activeEvaluations,
-    autoApproveAi,
-    autoApproveConfidenceThreshold,
-    playbackSpeed,
-    simulatedDay,
-    simulatedHour,
+    inboundShipments,
+    trafficIntensity,
+    triggerProductAiEvaluation,
     addLog,
-    onRefreshData,
   ]);
 
   // --- Master Time Loop Clock (Runs every 1 second) ---
@@ -1041,16 +1080,23 @@ export const SimulationLab: React.FC<SimulationLabProps> = ({
                       )}
 
                       {/* Badges / Metrics Footer */}
-                      {(log.priceDiff || log.stockDiff || log.confidence) && (
+                      {(log.priceDiff || log.stockDiff || log.remainingStock !== undefined || log.confidence) && (
                         <div className="flex items-center gap-2 pt-1 font-mono text-[10.5px] flex-wrap pl-1">
                           {log.priceDiff && (
-                            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700">
+                            <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                               Price: {log.priceDiff}
                             </span>
                           )}
                           {log.stockDiff && (
-                            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400 border border-slate-200 dark:border-slate-700">
-                              Stock: {log.stockDiff}
+                            <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                              {log.stockDiff.startsWith('-')
+                                ? `Order: ${log.stockDiff} units`
+                                : `Restocked: ${log.stockDiff}`}
+                            </span>
+                          )}
+                          {log.remainingStock !== undefined && (
+                            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-semibold">
+                              Stock: {log.remainingStock} units
                             </span>
                           )}
                           {log.confidence && (

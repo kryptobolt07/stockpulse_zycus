@@ -84,6 +84,34 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
         }
 
+        // Seed initial pending suggestions for PRD-006 (LED Desk Lamp — Dimmable: Stock 0 against threshold 15)
+        Product prd6 = productRepo.findById("PRD-006").orElse(null);
+        if (prd6 != null) {
+            pricingRepo.save(PricingSuggestion.builder()
+                    .product(prd6)
+                    .currentPrice(59.99)
+                    .recommendedPrice(64.99)
+                    .changeDirection(ChangeDirection.INCREASE)
+                    .confidence(0.86)
+                    .reasoning("Trigger [INVENTORY_LOW]: Stock level is 0 units (OUT_OF_STOCK) against safety threshold 15. Recommending a +8.3% price adjustment upon inventory arrival to capture latent demand.")
+                    .status(SuggestionStatus.PENDING)
+                    .triggerReason(TriggerReason.INVENTORY_LOW)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+
+            reorderRepo.save(ReorderSuggestion.builder()
+                    .product(prd6)
+                    .currentStock(0)
+                    .recommendedQuantity(45)
+                    .suggestedLeadTimeDays(5)
+                    .confidence(0.94)
+                    .reasoning("Trigger [INVENTORY_LOW]: Urgent stockout remediation. Product has 0 units on hand against a minimum threshold of 15. Recommended priority purchase order of 45 units with 5-day supplier turnaround.")
+                    .status(SuggestionStatus.PENDING)
+                    .triggerReason(TriggerReason.INVENTORY_LOW)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+        }
+
         log.info("Catalog successfully seeded with 8 products and initial demo triggers.");
     }
 }
