@@ -13,8 +13,8 @@ interface NavbarProps {
   onToggleAutoRefresh: () => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
-  activeTab: 'DASHBOARD' | 'API_EXPLORER';
-  onSelectTab: (tab: 'DASHBOARD' | 'API_EXPLORER') => void;
+  activeTab: 'DASHBOARD' | 'SIMULATION' | 'API_EXPLORER';
+  onSelectTab: (tab: 'DASHBOARD' | 'SIMULATION' | 'API_EXPLORER') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -56,7 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-            {/* Navigation Tabs (Dashboard vs API Explorer) */}
+            {/* Navigation Tabs (Dashboard vs Simulation vs API Explorer) */}
             <div className="flex items-center h-9 bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono ml-1 sm:ml-3">
               <button
                 onClick={() => onSelectTab('DASHBOARD')}
@@ -70,15 +70,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="hidden sm:inline">Console</span>
               </button>
               <button
+                onClick={() => onSelectTab('SIMULATION')}
+                className={`h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg transition-all ${
+                  activeTab === 'SIMULATION'
+                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>Simulation (1d=1m)</span>
+              </button>
+              <button
                 onClick={() => onSelectTab('API_EXPLORER')}
                 className={`h-8 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg transition-all ${
                   activeTab === 'API_EXPLORER'
-                    ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Terminal className="w-3.5 h-3.5" />
-                <span>API Explorer</span>
+                <span className="hidden sm:inline">API Explorer</span>
               </button>
             </div>
           </div>

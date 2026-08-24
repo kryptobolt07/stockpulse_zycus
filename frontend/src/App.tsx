@@ -15,6 +15,7 @@ import { AdjustStockModal } from './components/AdjustStockModal';
 import { AiStreamModal } from './components/AiStreamModal';
 import { AddProductModal } from './components/AddProductModal';
 import { ApiExplorer } from './components/ApiExplorer';
+import { SimulationLab } from './components/SimulationLab';
 import { CheckCircle2, AlertCircle, Info, X, RefreshCw } from 'lucide-react';
 
 interface EvaluationEvent {
@@ -25,7 +26,7 @@ interface EvaluationEvent {
 }
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'API_EXPLORER'>('DASHBOARD');
+  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'SIMULATION' | 'API_EXPLORER'>('DASHBOARD');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [pricingSuggestions, setPricingSuggestions] = useState<PricingSuggestion[]>([]);
@@ -315,6 +316,14 @@ export const App: React.FC = () => {
         {activeTab === 'API_EXPLORER' ? (
           /* Interactive API Explorer View */
           <ApiExplorer />
+        ) : activeTab === 'SIMULATION' ? (
+          /* Autonomous Live Simulation Lab (1d = 1m) */
+          <SimulationLab
+            products={products}
+            onRefreshData={() => loadData(true)}
+            strategyConfig={strategyConfig}
+            onToggleStrategy={handleToggleStrategy}
+          />
         ) : (
           /* Main Console Dashboard */
           <>

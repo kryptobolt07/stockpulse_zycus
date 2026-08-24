@@ -33,6 +33,7 @@
 4. **Onboarding & Simulation Suite:** Built-in `+ New Product` modal connected to `POST /products`, live stock adjusters, `1x Sale` simulators, `+5 Surge` viral traffic injectors, and on-demand `AI Advise` with active state feedback.
 5. **Real-Time Token Stream Inspector:** Live SSE stream viewer (`/products/{id}/suggest-pricing/stream`) displaying live SKU context chips, token-by-token reasoning visualization with `AbortController` stream deduplication, and validated proposal executive summaries.
 6. **Interactive Developer API Explorer:** Built-in API testing tab to send and inspect requests across all catalog, pricing, governance, and SSE telemetry endpoints in real time.
+7. **Live Time-Machine Simulation Lab (1 Day = 1 Minute):** Accelerated sandbox with variable playback speeds (1x, 2x, 5x), automated traffic simulation, real Gemini 2.5 Flash agent triggers, configurable auto-approval policies ($\ge 85\%$ confidence), and real-time supplier freight transit countdowns with automated restocking.
 
 ---
 
@@ -277,7 +278,8 @@ npm run build
 
 ### 5. Accessing the Application
 - **Merchandising Console**: [`http://localhost:5173`](http://localhost:5173)
-- **Interactive API Explorer & Playground**: Click the **`API Explorer`** tab in the top navigation bar at [`http://localhost:5173`](http://localhost:5173)
+- **Autonomous Simulation Lab (1d = 1m)**: Click the **`Simulation (1d=1m)`** tab in the top navigation bar.
+- **Interactive API Explorer & Playground**: Click the **`API Explorer`** tab in the top navigation bar.
 - **Backend Health / Dashboard API**: [`http://localhost:8080/api/analytics/dashboard`](http://localhost:8080/api/analytics/dashboard)
 - **Real-Time SSE Event Stream**: [`http://localhost:8080/api/events/stream`](http://localhost:8080/api/events/stream)
 
@@ -313,6 +315,7 @@ Open `http://localhost:5173` in your browser:
 3. **One-Click Governance:** In the **Pending Approvals** queue, click **`Apply Price`**.
    - *Result:* Status updates to `ACCEPTED` and the live catalog price reflects the new price instantly across all views.
 4. **Inspect Live Token Streaming:** Click **`Stream AI`** on any row to watch the LLM reason step-by-step live over SSE.
+5. **Run the Live Simulation Lab:** Switch to the **`Simulation (1d=1m)`** tab and click **`Start Live Simulation`**. Watch automated customer orders flow, real Gemini 2.5 Flash evaluations trigger, high-confidence proposals auto-approve, and live supplier freight POs countdown to physical warehouse delivery!
 
 ---
 
